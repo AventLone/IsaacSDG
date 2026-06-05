@@ -112,14 +112,15 @@ class SDG:
         
     def _random_dome_texture(self):
         display_dome = random.choice([True, False])
-        common.make_visiable(self._environment_prim_path, display_dome)
+        common.make_visiable(self._environment_prim_path, False)
         if not display_dome:
             texture = random.choice(self._dome_texture_urls)
             self._dome_texture.Set(texture)
 
     async def generate(self, sample_interval: int):
         # Step 1: Prepare loads with goods
-        pca_list: list[PermuAndCombi] = await self._loads_with_goods
+        if self._loads_with_goods is not None:
+            pca_list: list[PermuAndCombi] = await self._loads_with_goods
 
         this_stage = stage_utils.get_current_stage()
 
@@ -150,20 +151,22 @@ class SDG:
             targe_prim_path_parent = "/World/Target"
             prims_utils.create_prim(targe_prim_path_parent)
             target_prim_path = f"{targe_prim_path_parent}/obj"
-            for pca in pca_list:
-                for col in pca.column_prims:
-                    usd.duplicate_prim(this_stage, prim_path=str(col.GetPrimPath()), path_to=target_prim_path)
-                    common.set_local_trasform(target_prim_path, [0.0, 0.0, 0.0])
 
-                    for frame in range(self._camera_light_randomizer.frames_generated):
-                        self._camera_light_randomizer.randomize_camera()
-                        pbar.update(1)
-                        if frame % 4 == 0:
-                            self._random_dome_texture()
-                        if frame % 10 == 0:
-                            self._camera_light_randomizer.randomize_light()
-                        await rep.orchestrator.step_async(rt_subframes=10)
-                    this_stage.RemovePrim(target_prim_path)
+            if self._loads_with_goods is not None:
+                for pca in pca_list:
+                    for col in pca.column_prims:
+                        usd.duplicate_prim(this_stage, prim_path=str(col.GetPrimPath()), path_to=target_prim_path)
+                        common.set_local_trasform(target_prim_path, [0.0, 0.0, 0.0])
+
+                        for frame in range(self._camera_light_randomizer.frames_generated):
+                            self._camera_light_randomizer.randomize_camera()
+                            pbar.update(1)
+                            if frame % 4 == 0:
+                                self._random_dome_texture()
+                            if frame % 10 == 0:
+                                self._camera_light_randomizer.randomize_light()
+                            await rep.orchestrator.step_async(rt_subframes=10)
+                        this_stage.RemovePrim(target_prim_path)
 
         await rep.orchestrator.wait_until_complete_async()
 
@@ -192,7 +195,7 @@ def main() -> None:
 
     sdg_train = SDG(environment_urls=environment_urls, dome_texture_urls=dome_textures,
                     obj_urls_dir="/home/avent/Desktop/pallets",
-                    boxes_urls_and_weights=boxes_urls_and_weights,
+                    # boxes_urls_and_weights=boxes_urls_and_weights,
                     img_resolution=(600, 600),
                     stacking_cols=6, stacking_rows=6,
                     camera_height=CAMERA_HEIGHT_TRAIN,
