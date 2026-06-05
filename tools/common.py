@@ -57,7 +57,7 @@ def yaw2quat(yaw: float) -> Sequence[float]:
     return rotation.GetReal(), *rotation.GetImaginary()
 
 def make_visiable(prim: str | Usd.Prim, visible: bool = True):
-    prim = prim if type(prim) is Usd.Prim else prims_utils.get_prim_at_path(prim)
+    prim: Usd.Prim = prim if type(prim) is Usd.Prim else prims_utils.get_prim_at_path(prim)
     visibility = "visible" if visible else "invisible"
     prim.GetAttribute("visibility").Set(visibility)
 
@@ -97,17 +97,17 @@ def add_colliders(prim):
     for desc_prim in Usd.PrimRange(prim):
         if desc_prim.IsA(UsdGeom.Mesh) or desc_prim.IsA(UsdGeom.Gprim):
             # Physics
-            if not desc_prim.HasAPI(UsdPhysics.CollisionAPI):  # type: ignore
-                collision_api = UsdPhysics.CollisionAPI.Apply(desc_prim)  # type: ignore
+            if not desc_prim.HasAPI(UsdPhysics.CollisionAPI):
+                collision_api = UsdPhysics.CollisionAPI.Apply(desc_prim)
             else:
-                collision_api = UsdPhysics.CollisionAPI(desc_prim)  # type: ignore
+                collision_api = UsdPhysics.CollisionAPI(desc_prim)
             collision_api.CreateCollisionEnabledAttr(True)
 
         # Add mesh specific collision properties only to mesh types
         if desc_prim.IsA(UsdGeom.Mesh):
-            if not desc_prim.HasAPI(UsdPhysics.MeshCollisionAPI):  # type: ignore
-                mesh_collision_api = UsdPhysics.MeshCollisionAPI.Apply(desc_prim)  # type: ignore
+            if not desc_prim.HasAPI(UsdPhysics.MeshCollisionAPI):
+                mesh_collision_api = UsdPhysics.MeshCollisionAPI.Apply(desc_prim)
             else:
-                mesh_collision_api = UsdPhysics.MeshCollisionAPI(desc_prim)  # type: ignore
+                mesh_collision_api = UsdPhysics.MeshCollisionAPI(desc_prim)
             # mesh_collision_api.CreateApproximationAttr().Set("triangleMesh")
             mesh_collision_api.CreateApproximationAttr().Set("convexHull")

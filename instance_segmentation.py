@@ -94,7 +94,7 @@ class SDG:
         self._render_product = rep.create.render_product(
             camera=self._camera_light_randomizer.camera, resolution=img_resolution)
 
-        timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
+        timestamp = datetime.now().strftime("%Y.%m.%d-%H:%M")
         save_at = f"generated_data/{timestamp}" if save_path is None else f"{save_path}/{timestamp}"
         data_save_dir = os.path.join(os.getcwd(), save_at)
 

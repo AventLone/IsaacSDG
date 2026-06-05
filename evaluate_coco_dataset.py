@@ -229,18 +229,6 @@ def _add_card_style(ax: plt.Axes) -> None:
     ax.spines["left"].set_color("#333333")
     ax.spines["bottom"].set_color("#333333")
 
-def _add_footer(fig, text: str) -> None:
-    fig.text(
-        0.99,
-        0.01,
-        text,
-        ha="right",
-        va="bottom",
-        fontsize=9,
-        color="#666666",
-        style="italic",
-    )
-
 def _auto_bins(values: List[float], bins: int) -> int:
     if len(values) < 2:
         return bins
@@ -278,9 +266,9 @@ def save_hist(
     median_v = float(np.median(arr))
     p90_v = float(np.percentile(arr, 90))
 
-    ax.axvline(mean_v, linestyle="--", linewidth=2.0, label=f"Mean: {mean_v:.4f}")
-    ax.axvline(median_v, linestyle="-.", linewidth=2.0, label=f"Median: {median_v:.4f}")
-    ax.axvline(p90_v, linestyle=":", linewidth=2.4, label=f"P90: {p90_v:.4f}")
+    ax.axvline(mean_v, linestyle="--", color="#BD0202", linewidth=1.0, label=f"Mean: {mean_v:.4f}")
+    ax.axvline(median_v, linestyle="--", color="#810077", linewidth=1.0, label=f"Median: {median_v:.4f}")
+    ax.axvline(p90_v, linestyle="--", color="#007714", linewidth=1.0, label=f"P90: {p90_v:.4f}")
 
     ax.set_title(title, fontweight="bold", pad=16)
     if subtitle:
@@ -300,7 +288,6 @@ def save_hist(
     )
     leg.get_title().set_fontweight("bold")
 
-    _add_footer(fig, "COCO dataset audit")
     fig.tight_layout()
     fig.savefig(path, dpi=360)   # type:ignore
     plt.close(fig)
@@ -371,7 +358,6 @@ def save_bar(counter: Counter, labels: Dict[Any, str], path: Path, title: str,
     for text in leg.get_texts():
         text.set_fontweight("bold")
 
-    _add_footer(fig, "COCO dataset audit")
     fig.tight_layout()
     fig.savefig(path, dpi=220)   # type:ignore
     plt.close(fig)
@@ -420,7 +406,6 @@ def save_heatmap(
     ax.axhline(0.5, color="white", linestyle="--", linewidth=1.2, alpha=0.8)
     ax.text(0.505, 0.515, "image center", color="white", fontsize=10, fontweight="bold", alpha=0.85)
 
-    _add_footer(fig, "COCO dataset audit")
     fig.tight_layout()
     fig.savefig(path, dpi=360) # type:ignore
     plt.close(fig)
@@ -504,8 +489,9 @@ def audit_coco(coco_json: str) -> None:
         category_counts,
         categories,
         save_path / "category_counts.svg",
-        "Category Counts",
-        subtitle="Instance count per COCO category"
+        # "Category Counts",
+        "Instance Count per Category",
+        # subtitle="Instance count per COCO category"
     )
 
     save_hist(

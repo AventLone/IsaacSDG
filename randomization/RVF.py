@@ -10,7 +10,7 @@ from isaacsim.core.utils import semantics as semantics_utils
 import carb
 import omni.kit.app, omni.physx
 from isaacsim.core.utils import stage as stage_utils, prims as prims_utils
-from pxr import Gf, Usd, UsdGeom, UsdPhysics, UsdShade, PhysicsSchemaTools, PhysxSchema # type: ignore
+from pxr import Gf, Usd, UsdGeom, UsdPhysics, UsdShade, PhysicsSchemaTools, PhysxSchema
 
 timeline = omni.timeline.get_timeline_interface()
 app_interface = omni.kit.app.get_app()
@@ -18,7 +18,7 @@ app_interface = omni.kit.app.get_app()
 
 async def wait_for(frames: int):
     for _ in range(frames):
-        await app_interface.next_update_async()  # type: ignore
+        await app_interface.next_update_async()
 
 
 # Enables collisions with the asset (without rigid body dynamics the asset will be static)
@@ -27,28 +27,28 @@ def add_colliders(prim):
     for desc_prim in Usd.PrimRange(prim):
         if desc_prim.IsA(UsdGeom.Mesh) or desc_prim.IsA(UsdGeom.Gprim):
             # Physics
-            if not desc_prim.HasAPI(UsdPhysics.CollisionAPI):  # type: ignore
-                collision_api = UsdPhysics.CollisionAPI.Apply(desc_prim)  # type: ignore
+            if not desc_prim.HasAPI(UsdPhysics.CollisionAPI):
+                collision_api = UsdPhysics.CollisionAPI.Apply(desc_prim)
             else:
                 collision_api = UsdPhysics.CollisionAPI(desc_prim)  # type: ignore
             collision_api.CreateCollisionEnabledAttr(True)
 
         # Add mesh specific collision properties only to mesh types
         if desc_prim.IsA(UsdGeom.Mesh):
-            if not desc_prim.HasAPI(UsdPhysics.MeshCollisionAPI):  # type: ignore
-                mesh_collision_api = UsdPhysics.MeshCollisionAPI.Apply(desc_prim)  # type: ignore
+            if not desc_prim.HasAPI(UsdPhysics.MeshCollisionAPI):
+                mesh_collision_api = UsdPhysics.MeshCollisionAPI.Apply(desc_prim)
             else:
-                mesh_collision_api = UsdPhysics.MeshCollisionAPI(desc_prim)  # type: ignore
+                mesh_collision_api = UsdPhysics.MeshCollisionAPI(desc_prim)
             mesh_collision_api.CreateApproximationAttr().Set("convexHull")
 
 
 # Enables rigid body dynamics (physics simulation) on the prim (having valid colliders is recommended)
 def add_rigid_body_dynamics(prim: Usd.Prim, disable_gravity=False, angular_damping=None):
     # Physics
-    if not prim.HasAPI(UsdPhysics.RigidBodyAPI):   # type: ignore
-        rigid_body_api = UsdPhysics.RigidBodyAPI.Apply(prim)   # type: ignore   
+    if not prim.HasAPI(UsdPhysics.RigidBodyAPI):
+        rigid_body_api = UsdPhysics.RigidBodyAPI.Apply(prim) 
     else:
-        rigid_body_api = UsdPhysics.RigidBodyAPI(prim)   # type: ignore
+        rigid_body_api = UsdPhysics.RigidBodyAPI(prim)
     rigid_body_api.CreateRigidBodyEnabledAttr(True)
     # PhysX
     if not prim.HasAPI(PhysxSchema.PhysxRigidBodyAPI):
@@ -171,7 +171,7 @@ async def stack_boxes_on_pallet_async(pallet_prim: Usd.Prim, boxes_urls_and_weig
         mat_binding_api = UsdShade.MaterialBindingAPI.Apply(box_prim)
         mat_binding_api.Bind(default_material, UsdShade.Tokens.weakerThanDescendants, "physics")
         # Wait for an app update to load the new attributes
-        await app_interface.next_update_async()   # type: ignore
+        await app_interface.next_update_async()
 
         # Play simulation for a few frames for each box
         timeline.play()
@@ -183,7 +183,7 @@ async def stack_boxes_on_pallet_async(pallet_prim: Usd.Prim, boxes_urls_and_weig
 
     # Remove rigid body dynamics of the boxes until all other scenarios are completed
     for box in box_prims:
-        UsdPhysics.RigidBodyAPI(box).GetRigidBodyEnabledAttr().Set(False)   # type: ignore
+        UsdPhysics.RigidBodyAPI(box).GetRigidBodyEnabledAttr().Set(False)
 
     # Increase the friction to prevent sliding of the boxes on the pallet before removing the collision walls
     physics_material.CreateStaticFrictionAttr().Set(0.99)
