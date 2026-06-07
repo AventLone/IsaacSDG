@@ -1,2 +1,2 @@
-a = (3, 5)
-print(a*2)
+from pxr import Usd
+print(Usd.GetVersion())

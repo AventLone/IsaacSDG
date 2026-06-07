@@ -5,14 +5,16 @@ SIMU_APP = SimulationApp({"renderer": "RayTracedLighting", "headless": True})
 import warp.config
 warp.config.quiet = True
 
-# from omni.kit.async_engine import run_coroutine
-# from isaacsim.core.utils import stage as stage_utils, prims as prims_utils
 import carb.settings
 settings = carb.settings.get_settings()
 settings.set("/log/level", "warning")
 settings.set("/log/channels/omni.replicator.core", "warning")
 settings.set("/log/channels/omni.replicator.core.*", "warning")
 #-----------------------------------------------------------------------------------#
+
+def app_update(frames: int):
+    for _ in range(frames):
+        SIMU_APP.update()
 
 from typing import Sequence
 from isaacsim.core.prims import SingleXFormPrim

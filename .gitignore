@@ -7,7 +7,6 @@ __pycache__/
 *.so
 
 # Distribution / packaging
-.Python
 build/
 develop-eggs/
 dist/
@@ -50,6 +49,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+.vscode/
 
 # Translations
 *.mo
@@ -146,6 +146,9 @@ activemq-data/
 
 # SageMath parsed files
 *.sage.py
+*.png
+*.jpg
+*.jpeg
 
 # Environments
 .env

@@ -22,7 +22,7 @@
     // Those paths are automatically filled by build system, see `repo.toml` for configuration:
     "python.analysis.extraPaths": [
         "/home/avent/Apps/IsaacSim6.0/exts/isaacsim.app.about",
-        "/home/avent/Apps/IsaacSim6.0/exts/isaacsim.app.setup",
+        "exts/isaacsim.app.setup",
         "/home/avent/Apps/IsaacSim6.0/exts/isaacsim.asset.exporter.urdf",
         "/home/avent/Apps/IsaacSim6.0/exts/isaacsim.asset.exporter.urdf.ui",
         "/home/avent/Apps/IsaacSim6.0/exts/isaacsim.asset.exporter.urdf/pip_prebundle",

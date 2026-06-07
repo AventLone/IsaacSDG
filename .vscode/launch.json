@@ -1,49 +1,67 @@
+// {
+//     // Use IntelliSense to learn about possible attributes.
+//     // Hover to view descriptions of existing attributes.
+//     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+//     "version": "0.2.0",
+//     "configurations": [
+//         {
+//             "name": "Python: Current File",
+//             // "type": "python",
+//             "type": "debugpy",
+//             "request": "launch",
+//             "program": "${file}",
+//             "console": "integratedTerminal",
+//             "env": {
+//                 "RESOURCE_NAME": "IsaacSim"
+//             },
+//             "python": "/home/avent/Apps/IsaacSim6.0/kit/python/bin/python3",
+//             "envFile": "/home/avent/Apps/IsaacSim6.0/.vscode/.standalone_examples.env",
+//             "preLaunchTask": "setup_python_env"
+//         },
+//         {
+//             "name": "Python: Attach (windows-x86_64/linux-x86_64)",
+//             "type": "python",
+//             "request": "attach",
+//             "port": 3000,
+//             "host": "localhost"
+//         },
+//         {
+//             "name": "(Linux) isaac-sim",
+//             "type": "cppdbg",
+//             "request": "launch",
+//             "program": "/home/avent/Apps/IsaacSim6.0/kit/kit",
+//             "args": ["/home/avent/Apps/IsaacSim6.0/apps/isaacsim.exp.full.kit",
+//                 "--ext-folder", "/home/avent/Apps/IsaacSim6.0/exts",
+//                 "--ext-folder", "/home/avent/Apps/IsaacSim6.0/apps"],
+//             "stopAtEntry": false,
+//             "cwd": "/home/avent/Apps/IsaacSim6.0",
+//             "environment": [],
+//             "externalConsole": false,
+//             "MIMode": "gdb",
+//             "setupCommands": [
+//                 {
+//                     "description": "Enable pretty-printing for gdb",
+//                     "text": "-enable-pretty-printing",
+//                     "ignoreFailures": true
+//                 }
+//             ]
+//         }
+//     ]
+// }
+
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Python: Current File",
-            "type": "python",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
-            "env": {
-                "RESOURCE_NAME": "IsaacSim"
-            },
-            "python": "${workspaceFolder}/kit/python/bin/python3",
-            "envFile": "${workspaceFolder}/.vscode/.standalone_examples.env",
-            "preLaunchTask": "setup_python_env"
-        },
-        {
-            "name": "Python: Attach (windows-x86_64/linux-x86_64)",
-            "type": "python",
-            "request": "attach",
-            "port": 3000,
-            "host": "localhost"
-        },
-        {
-            "name": "(Linux) isaac-sim",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/kit/kit",
-            "args": ["${workspaceFolder}/apps/isaacsim.exp.full.kit",
-                "--ext-folder", "${workspaceFolder}/exts",
-                "--ext-folder", "${workspaceFolder}/apps"],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Isaac Sim Script",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "/home/avent/Apps/IsaacSim6.0/python.sh",
+    //   "args": [
+    //     "${workspaceFolder}/tools/occ_grid_generator.py"
+    //   ],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
 }

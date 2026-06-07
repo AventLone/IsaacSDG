@@ -1,1 +1,0 @@
-source /home/avent/Apps/IsaacSim6.0/setup_conda_env.sh

@@ -1,5 +1,10 @@
 import numpy as np
 from typing import Sequence
+import isaacsim.asset.gen.omap as gen_omap
+
+from isaacsim.asset.gen.omap import 
+
+
 
 def generate_orbit_positions(origin: np.ndarray, radius: float, count: int):
     # 在 0 到 2pi 之间均匀生成角度
