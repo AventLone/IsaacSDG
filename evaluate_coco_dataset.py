@@ -5,15 +5,15 @@ It analyzes a COCO-format instance segmentation / detection dataset without
 requiring generation-time metadata or depth.
 
 Outputs:
-  - category_counts.svg
-  - bbox_area_ratio.svg
-  - bbox_width_ratio.svg
-  - bbox_height_ratio.svg
-  - bbox_center_heatmap.svg
-  - visible_ratio_proxy.svg
-  - bbox_clip_ratio.svg
-  - occlusion_level_proxy.svg
-  - objects_per_image.svg
+  - category_counts.png
+  - bbox_area_ratio.png
+  - bbox_width_ratio.png
+  - bbox_height_ratio.png
+  - bbox_center_heatmap.png
+  - visible_ratio_proxy.png
+  - bbox_clip_ratio.png
+  - occlusion_level_proxy.png
+  - objects_per_image.png
   - dataset_score.csv
   - per_category_summary.csv
   - instance_audit.csv
@@ -488,7 +488,7 @@ def audit_coco(coco_json: str) -> None:
     save_bar(
         category_counts,
         categories,
-        save_path / "category_counts.svg",
+        save_path / "category_counts.png",
         # "Category Counts",
         "Instance Count per Category",
         # subtitle="Instance count per COCO category"
@@ -496,7 +496,7 @@ def audit_coco(coco_json: str) -> None:
 
     save_hist(
         bbox_area_ratio,
-        save_path / "bbox_area_ratio.svg",
+        save_path / "bbox_area_ratio.png",
         "BBox Area Ratio Distribution",
         "BBox Area / Image Area",
         subtitle="Object apparent scale in the image"
@@ -504,7 +504,7 @@ def audit_coco(coco_json: str) -> None:
 
     save_hist(
         bbox_width_ratio,
-        save_path / "bbox_width_ratio.svg",
+        save_path / "bbox_width_ratio.png",
         "BBox Width Ratio Distribution",
         "BBox Width / Image Width",
         subtitle="Horizontal object scale"
@@ -512,7 +512,7 @@ def audit_coco(coco_json: str) -> None:
 
     save_hist(
         bbox_height_ratio,
-        save_path / "bbox_height_ratio.svg",
+        save_path / "bbox_height_ratio.png",
         "BBox Height Ratio Distribution",
         "BBox Height / Image Height",
         subtitle="Vertical object scale"
@@ -520,7 +520,7 @@ def audit_coco(coco_json: str) -> None:
 
     save_hist(
         visible_ratio_proxy,
-        save_path / "visible_ratio_proxy.svg",
+        save_path / "visible_ratio_proxy.png",
         "Approx. Visible Ratio Proxy Distribution",
         "Mask Area / BBox Area, or BBox Clip Ratio",
         subtitle="Proxy only; not true 3D visible ratio"
@@ -528,7 +528,7 @@ def audit_coco(coco_json: str) -> None:
 
     save_hist(
         clip_ratios,
-        save_path / "bbox_clip_ratio.svg",
+        save_path / "bbox_clip_ratio.png",
         "BBox Clip Ratio Distribution",
         "Clipped BBox Area / Raw BBox Area",
         subtitle="Lower values indicate image-border truncation"
@@ -537,7 +537,7 @@ def audit_coco(coco_json: str) -> None:
     save_bar(
         occlusion_counter,
         {k: k for k in occlusion_counter.keys()},
-        save_path / "occlusion_level_proxy.svg",
+        save_path / "occlusion_level_proxy.png",
         "Approx. Occlusion / Truncation Level",
         subtitle="Heuristic label derived from COCO bbox and mask"
     )
@@ -545,7 +545,7 @@ def audit_coco(coco_json: str) -> None:
     if objects_per_image:
         save_hist(
             list(objects_per_image.values()),
-            save_path / "objects_per_image.svg",
+            save_path / "objects_per_image.png",
             "Objects Per Image Distribution",
             "Objects per Image",
             bins=max(5, min(80, max(objects_per_image.values()) + 1)),
