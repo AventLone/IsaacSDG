@@ -1,33 +1,7 @@
-# from tools.common import SIMU_APP
-
 import numpy as np
 from pxr import UsdGeom, Usd, Vt
 from PIL import Image
 from isaacsim.core.utils import prims as prims_utils
-
-
-# def collect_world_points(root_prim):
-#     points_world = []
-
-#     for prim in Usd.PrimRange(root_prim):
-#         if not prim.IsA(UsdGeom.Mesh):
-#             continue
-
-#         mesh = UsdGeom.Mesh(prim)
-#         points = mesh.GetPointsAttr().Get()
-#         if points is None:
-#             continue
-
-#         print(type(points))
-#         print(type(points[0]))
-
-#         xform = UsdGeom.Xformable(prim).ComputeLocalToWorldTransform(0)
-
-#         for p in points:
-#             wp = xform.Transform(p)
-#             points_world.append([wp[0], wp[1], wp[2]])
-
-#     return np.asarray(points_world, dtype=np.float32)
 
 def collect_points(prim: Usd.Prim):
     points_list = []
@@ -69,6 +43,39 @@ def points_to_grid(points: np.ndarray, axes=("x", "z"), cell_size=0.005, padding
     grid[h - 1 - pix[:, 1], pix[:, 0]] = 255
 
     return Image.fromarray(grid), uv_min, uv_max
+
+
+def pixel_to_world_uv(row: int, col: int, meta: dict, center: bool = False):
+    """
+    Convert image pixel coordinate to projected real-world coordinate.
+
+    Args:
+        row, col:
+            image coordinate, row downward, col rightward.
+        meta:
+            metadata returned by project_points_to_mask().
+        center:
+            If True, return the coordinate of pixel center.
+            If False, return the coordinate of pixel corner/grid index.
+
+    Returns:
+        uv_world:
+            np.ndarray, shape = (2,)
+            Coordinate along meta["axes"], e.g. axes=("x", "z") -> [x, z].
+    """
+    cell_size = meta["cell_size"]
+    uv_min = meta["uv_min"]
+    height = meta["height"]
+
+    offset = 0.5 if center else 0.0
+
+    u = uv_min[0] + (col + offset) * cell_size
+
+    # because image row is flipped
+    v_index = height - 1 - row
+    v = uv_min[1] + (v_index + offset) * cell_size
+
+    return u, v
 
 import math
 import numpy as np
@@ -274,6 +281,9 @@ def project_points_to_mask(points: np.ndarray, axes=("x", "z"), cell_size=0.005,
     meta = {"axes": axes, "cell_size": cell_size,
             "uv_min": uv_min, "uv_max": uv_max, 
             "width": width, "height": height}
+    
+    # Real-world projected coordinate of image origin: pixel (row=0, col=0)
+    meta["image_origin_uv"] = pixel_to_world_uv(row=0, col=0, meta=meta, center=True)
 
     return mask, meta
 
@@ -314,45 +324,3 @@ class OrthographicProject:
     @property
     def projection_on_yz(self):
         return self._get_mask(("y", "z"))
-    
-
-# from isaacsim.core.utils import stage as stage_utils
-# stage_utils.create_new_stage()
-# stage_utils.add_reference_to_stage(
-#             usd_path="/home/avent/Desktop/IsaacAssets/SimReadyExplorer/Warehouse/02/common_assets/props/heavydutynestablepallet_a01/heavydutynestablepallet_a01_inst_base.usd",
-#             prim_path="/Pallet"
-#         )
-
-# stage = stage_utils.get_current_stage()
-# root = stage.GetPrimAtPath("/Pallet")
-
-# # points = collect_world_points(root)
-# points = collect_points(root)
-
-# xy_img, _, _ = points_to_grid(points, axes=("x", "y"), cell_size=0.005)
-# xz_img, _, _ = points_to_grid(points, axes=("x", "z"), cell_size=0.005)
-# yz_img, _, _ = points_to_grid(points, axes=("y", "z"), cell_size=0.005)
-
-# xy_img.save("pallet_xy.png")
-# xz_img.save("pallet_xz.png")
-# yz_img.save("pallet_yz.png")
-
-# occ = OrthographicProject(prim_path="/Pallet", cell_size=0.001, padding=0.0)
-# occ.update()
-
-# xy_mask, xy_meta = occ.xy
-# xz_mask, xz_meta = occ.xz
-# yz_mask, yz_meta = occ.yz
-
-# cv2.imwrite("pallet_xy_surface.png", xy_mask)
-# cv2.imwrite("pallet_xz_surface.png", xz_mask)
-# cv2.imwrite("pallet_yz_surface.png", yz_mask)
-
-# print("XY:", xy_mask.shape, xy_meta)
-# print("XZ:", xz_mask.shape, xz_meta)
-# print("YZ:", yz_mask.shape, yz_meta)
-
-# while SIMU_APP.is_running():
-#     SIMU_APP.update()
-
-# SIMU_APP.close()

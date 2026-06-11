@@ -16,16 +16,12 @@ class CameraAndLightRandomizer:
         rep.randomizer.register(self._randomize_camera_pose)
         rep.randomizer.register(self._randomize_light)
 
-        self.camera_trigger = rep.trigger.on_custom_event(self._trigger_camera_event)
+        # self.camera_trigger = rep.trigger.on_custom_event(self._trigger_camera_event)
     
-        with self.camera_trigger:
-            rep.randomizer._randomize_camera_pose()   # type: ignore
+        with rep.trigger.on_custom_event(self._trigger_camera_event):
+            rep.randomizer._randomize_camera_pose()
         with rep.trigger.on_custom_event(self._trigger_light_event):
-            rep.randomizer._randomize_light()   # type: ignore
-
-    # @property
-    # def frames_generated(self):
-    #     return len(self._camera_poses)
+            rep.randomizer._randomize_light()
 
     def randomize_camera(self):
         rep.utils.send_og_event(self._trigger_camera_event)
@@ -41,7 +37,7 @@ class CameraAndLightRandomizer:
                 # look_at=(0.0, 0.0, 0.1)
                 look_at=rep.distribution.uniform((-1.0, -1.0, 0.0), (1.0, 1.0, 0.2))
             )
-        return self.camera.node # type: ignore
+        return self.camera.node
 
     def _randomize_light(self) -> rep.scripts.utils.ReplicatorItem:
         lights = rep.get.prims(prim_types=["RectLight", "SphereLight", "DomeLight"])

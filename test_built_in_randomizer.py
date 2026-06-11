@@ -1,4 +1,6 @@
-import asyncio
+from tools.common import SIMU_APP
+
+# import asyncio
 import inspect
 import os
 
@@ -7,7 +9,6 @@ import numpy as np
 import omni.kit.app
 import omni.replicator.core as rep
 import omni.timeline
-import omni.usd
 from isaacsim.replicator.behavior.behaviors import (
     LightRandomizer,
     LocationRandomizer,
@@ -19,25 +20,32 @@ from isaacsim.replicator.behavior.behaviors import (
 from isaacsim.replicator.behavior.global_variables import EXPOSED_ATTR_NS
 from isaacsim.replicator.behavior.utils.behavior_utils import (
     add_behavior_script_with_parameters_async,
-    publish_event_and_wait_for_completion_async,
+    publish_event_and_wait_for_completion_async
 )
 from isaacsim.storage.native import get_assets_root_path_async
-from pxr import Gf, UsdGeom
+from pxr import Gf, UsdGeom, Usd
+from isaacsim.core.utils import stage as stage_utils
 
 
-async def setup_and_run_stacking_simulation_async(prim, seed: int | None = None):
+async def setup_and_run_stacking_simulation_async(prim: Usd.Prim, seed: int | None = None):
+    # STACK_ASSETS_CSV = (
+    #     "/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxC_01.usd,"
+    #     "/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxD_01.usd,"
+    #     "/Isaac/Props/KLT_Bin/small_KLT_visual.usd,"
+    # )
     STACK_ASSETS_CSV = (
+        "/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxA_01.usd,"
+        "/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxB_01.usd,"
         "/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxC_01.usd,"
-        "/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxD_01.usd,"
-        "/Isaac/Props/KLT_Bin/small_KLT_visual.usd,"
+        "/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxD_01.usd"
     )
 
     # Add the behavior script with custom parameters
     script_path = inspect.getfile(VolumeStackRandomizer)
     parameters = {
         f"{EXPOSED_ATTR_NS}:{VolumeStackRandomizer.BEHAVIOR_NS}:assets:csv": STACK_ASSETS_CSV,
-        f"{EXPOSED_ATTR_NS}:{VolumeStackRandomizer.BEHAVIOR_NS}:assets:numRange": Gf.Vec2i(2, 5),
-        f"{EXPOSED_ATTR_NS}:{VolumeStackRandomizer.BEHAVIOR_NS}:renderSimulation": False,
+        f"{EXPOSED_ATTR_NS}:{VolumeStackRandomizer.BEHAVIOR_NS}:assets:numRange": Gf.Vec2i(2, 20),
+        f"{EXPOSED_ATTR_NS}:{VolumeStackRandomizer.BEHAVIOR_NS}:renderSimulation": True
     }
     if seed is not None:
         parameters[f"{EXPOSED_ATTR_NS}:{VolumeStackRandomizer.BEHAVIOR_NS}:seed"] = seed
@@ -50,7 +58,7 @@ async def setup_and_run_stacking_simulation_async(prim, seed: int | None = None)
             expected_payload={"prim_path": prim.GetPath(), "state_name": expected_state},
             publish_event_name=VolumeStackRandomizer.EVENT_NAME_IN,
             subscribe_event_name=VolumeStackRandomizer.EVENT_NAME_OUT,
-            max_wait_updates=max_wait,
+            max_wait_updates=max_wait
         )
 
     # Define and execute the stacking simulation steps
@@ -198,10 +206,11 @@ async def run_example_async(num_captures, seed: int | None = None):
         target_rotation_seed = target_location_seed = None
 
     # Open stage
-    assets_root_path = await get_assets_root_path_async()
+    # assets_root_path = await get_assets_root_path_async()
+    assets_root_path = "/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1"
     print(f"Opening stage from {assets_root_path + STAGE_URL}")
-    await omni.usd.get_context().open_stage_async(assets_root_path + STAGE_URL)
-    stage = omni.usd.get_context().get_stage()
+    await stage_utils.open_stage_async(assets_root_path + STAGE_URL)
+    stage = stage_utils.get_current_stage()
 
     # Check if all required prims exist in the stage
     pallets_root_prim = stage.GetPrimAtPath(PALLETS_ROOT_PATH)
@@ -244,4 +253,11 @@ async def run_example_async(num_captures, seed: int | None = None):
     await setup_writer_and_capture_data_async(camera_path=camera_prim.GetPath(), num_captures=num_captures)
 
 
-asyncio.ensure_future(run_example_async(num_captures=6))
+# asyncio.ensure_future(run_example_async(num_captures=6))
+
+SIMU_APP.run_coroutine(run_example_async(num_captures=6))
+
+while SIMU_APP.is_running():
+    SIMU_APP.update()
+
+SIMU_APP.close()

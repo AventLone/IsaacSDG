@@ -6,7 +6,7 @@ from typing import Optional
 import omni.replicator.core as rep
 from writers import CocoInstanceSegWriter
 from randomization.evnet_randomizer import CameraAndLightRandomizer, MaterialRandomizer
-from randomization import stack_boxes_on_pallet_async
+from randomization import stack_boxes_on_pallet_async, volume_stack
 from sample import PermuAndCombi
 from tools import common
 
@@ -37,6 +37,22 @@ async def prepare_loads_with_goods(prim_paths: list[str], loads_count: int, boxe
             idx += 3.6
     return pca_list
 
+# async def prepare_loads_with_goods(prim_paths: list[str], loads_count: int, boxes_urls_and_weights: list):
+#     pca_list = []
+#     idx = 0.0
+
+#     for prim_path in tqdm(prim_paths, desc="Processing paths", unit="Pallet", file=sys.stdout):
+#         pca = PermuAndCombi([prim_path])
+#         pca.set_pose(translation=(0.0, 999.0 + idx, 0.0), yaw=0.0)
+#         pca.create_columns(columns=loads_count, direction='x', gap=0.2)
+
+#         boxes_nums = [random.randint(1, 3) for _ in range(len(pca.column_prims))]
+#         await volume_stack(pallet_prims=pca.column_prims, boxes_urls_and_weights=boxes_urls_and_weights,
+#                                                 boxes_nums=boxes_nums, overhang=0.1)
+#         pca_list.append(pca)
+#         idx += 3.6
+#     return pca_list
+
 
 class SDG:
     # Disable capture on play and async rendering
@@ -46,26 +62,17 @@ class SDG:
     # Set DLSS to Quality mode (2) for best SDG results (Options: 0 (Performance), 1 (Balanced), 2 (Quality), 3 (Auto)
     carb.settings.get_settings().set("rtx/post/dlss/execMode", 2)
 
-    def __init__(self, environment_urls: list, dome_texture_urls: list, 
+    def __init__(self, stage_url: str, dome_texture_urls: list, 
                  obj_urls_dir: str, img_resolution: tuple[int, int], 
                  stacking_cols: int, stacking_rows: int,
                  camera_height: float, pallet_with_goods_count: Optional[int],
                  boxes_urls_and_weights: Optional[list]=None,
                  save_path=None) -> None:
-        stage_utils.create_new_stage()
-        prims_utils.create_prim("/World")
-        self._environment_prim_path = "/World/Environment"
+        if not stage_utils.open_stage(stage_url):
+            raise RuntimeError(f"Failed to open {stage_url}")
+        
         self._dome_prim_path = "/World/Lights/DomeLight"
-
-        stage_utils.add_reference_to_stage(
-            usd_path="/home/avent/Desktop/IsaacAssets/Collected_warehouse_trailer/Environments/warehouse_trailer.usd",
-            prim_path=self._environment_prim_path
-        )
-        common.set_world_trasform(prim=self._environment_prim_path,
-                                  translation=[-7.6, 4.85, 0.0], orientation=common.yaw2quat(90.0))
-
         self._dome_texture_urls = dome_texture_urls
-        self._environment_urls = environment_urls
         self._dome_prim = prims_utils.create_prim(prim_path=self._dome_prim_path, prim_type="DomeLight",
                                             attributes={"inputs:intensity": 1000.0,
                                                         "inputs:texture:file": dome_texture_urls[0]})
@@ -99,7 +106,7 @@ class SDG:
         data_save_dir = os.path.join(os.getcwd(), save_at)
 
         self._writer = CocoInstanceSegWriter(output_dir=data_save_dir)
-        self._writer.attach(self._render_product, trigger=self._camera_light_randomizer.camera_trigger)
+        self._writer.attach(self._render_product)
 
         self._pallet_with_goods_count = pallet_with_goods_count
 
@@ -181,39 +188,39 @@ def main() -> None:
     CAMERA_RADIUSES_VAL = [3.0]
     PALLET_WITH_GOODS_COLUMNS = 10
 
-    environment_urls = ["/home/avent/Desktop/IsaacAssets/Collected_warehouse_trailer/Environments/warehouse_trailer.usd"]
-
     boxes_urls_and_weights = [
-        ("/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxA_01.usd", 0.02),
-        ("/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxB_01.usd", 0.06),
-        ("/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxC_01.usd", 0.12),
-        ("/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxD_01.usd", 0.80)
+        ("/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxA_01.usd", 0.1),
+        ("/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxB_01.usd", 0.12),
+        ("/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxC_01.usd", 0.22),
+        ("/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxD_01.usd", 0.56)
     ]
 
     dome_textures = common.find_files(
         "/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1/NVIDIA/Assets/Skies", "hdr")
 
-    sdg_train = SDG(environment_urls=environment_urls, dome_texture_urls=dome_textures,
+    sdg_train = SDG(stage_url="/home/avent/Desktop/IsaacAssets/SDG-Only/warehouse_stage.usd", 
+                    dome_texture_urls=dome_textures,
                     obj_urls_dir="/home/avent/Desktop/pallets",
-                    # boxes_urls_and_weights=boxes_urls_and_weights,
+                    boxes_urls_and_weights=boxes_urls_and_weights,
                     img_resolution=(600, 600),
                     stacking_cols=6, stacking_rows=6,
                     camera_height=CAMERA_HEIGHT_TRAIN,
                     pallet_with_goods_count=5,
                     save_path="/media/avent/DATA/generated_data/train")
-
     try:
         SIMU_APP.run_coroutine(sdg_train.generate(sample_interval=3))
 
-    # sdg_val = SDG(environment_urls=environment_urls, dome_texture_urls=dome_textures,
-    #               obj_urls_dir="/home/avent/Desktop/pallets",
-    #               boxes_urls_and_weights=boxes_urls_and_weights,
-    #               img_resolution=(504, 504),
-    #               stacking_cols=3, stacking_rows=3,
-    #               camera_height=CAMERA_HEIGHT_VAL, camera_orbit_radiuses=CAMERA_RADIUSES_VAL,
-    #               pallet_with_goods_count=2,
-    #               save_path="/home/avent/Desktop/generated_data/valid")
-    # simu_app.run_coroutine(sdg_val.generate(sample_interval=3))
+        # sdg_val = SDG(environment_urls=environment_urls, dome_texture_urls=dome_textures,
+        #               obj_urls_dir="/home/avent/Desktop/pallets",
+        #               boxes_urls_and_weights=boxes_urls_and_weights,
+        #               img_resolution=(504, 504),
+        #               stacking_cols=3, stacking_rows=3,
+        #               camera_height=CAMERA_HEIGHT_VAL, camera_orbit_radiuses=CAMERA_RADIUSES_VAL,
+        #               pallet_with_goods_count=2,
+        #               save_path="/home/avent/Desktop/generated_data/valid")
+        # simu_app.run_coroutine(sdg_val.generate(sample_interval=3))
+    except Exception as e:   # catches all built-in exceptions
+        LOGGER.error(f"Something went wrong: {e}")
     finally:
         SIMU_APP.close()
 

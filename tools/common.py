@@ -1,26 +1,15 @@
-#----------------------------------- Core ------------------------------------------#
-from isaacsim.simulation_app import SimulationApp
-SIMU_APP = SimulationApp({"renderer": "RayTracedLighting", "headless": True})
-
-import warp.config
-warp.config.quiet = True
-
-import carb.settings
-settings = carb.settings.get_settings()
-settings.set("/log/level", "warning")
-settings.set("/log/channels/omni.replicator.core", "warning")
-settings.set("/log/channels/omni.replicator.core.*", "warning")
-#-----------------------------------------------------------------------------------#
-
-def app_update(frames: int):
-    for _ in range(frames):
-        SIMU_APP.update()
-
 from typing import Sequence
 from isaacsim.core.prims import SingleXFormPrim
 from isaacsim.core.utils import bounds as bounds_utils, prims as prims_utils, stage as stage_utils
 from pxr import Usd, Gf, UsdGeom, UsdPhysics
-import pathlib, glob, os
+import pathlib, glob, os, omni.timeline, omni.kit.app
+
+timeline = omni.timeline.get_timeline_interface()
+app_interface = omni.kit.app.get_app()
+
+async def wait_for(frames: int):
+    for _ in range(frames):
+        await app_interface.next_update_async()
 
 def find_files(dir: str, extension: str, recursive=True):
     # 拼接匹配模式，** 表示递归匹配任意层级的子文件夹
@@ -86,12 +75,13 @@ def set_local_trasform(prim: str | Usd.Prim,
 def set_world_trasform(prim: str | Usd.Prim, 
                        translation: Sequence[float], 
                        orientation: Sequence[float] = [1.0, 0.0, 0.0, 0.0],
-                       scale: Sequence[float] = [1.0, 1.0, 1.0]) -> None:
+                       scale: Sequence[float]=None) -> None:
     prim_path = str(prim.GetPrimPath()) if type(prim) is Usd.Prim else prim
     xform_prim = SingleXFormPrim(prim_path)
     xform_prim.initialize()
     xform_prim.set_world_pose(translation, orientation)
-    xform_prim.set_local_scale(scale)
+    if scale is not None:
+        xform_prim.set_local_scale(scale)
 
 def add_colliders(prim):
     prim = prim if type(prim) is Usd.Prim else prims_utils.get_prim_at_path(prim)

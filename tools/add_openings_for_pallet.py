@@ -1,4 +1,4 @@
-from tools.common import SIMU_APP
+from tools import SIMU_APP
 
 from tools.orthographic_views import OrthographicProject
 import cv2
@@ -7,12 +7,14 @@ from isaacsim.core.utils import stage as stage_utils
 
 pallet_prim_path = "/Pallet"
 
-stage_utils.create_new_stage()
-stage_utils.add_reference_to_stage(
-            usd_path="/home/avent/Desktop/IsaacAssets/Props/KKP.usd",
-            prim_path="/Pallet"
-        )
+# stage_utils.create_new_stage()
+# stage_utils.add_reference_to_stage(
+#             usd_path="/home/avent/Desktop/IsaacAssets/Props/KKP.usd",
+#             prim_path="/Pallet"
+#         )
 
+if not stage_utils.open_stage("/home/avent/Desktop/IsaacAssets/SDG-Only/warehouse_stage.usd"):
+    raise RuntimeError("Failed to ope usd.")
 
 def get_prim_opening_img(prim_path: str, cell_size: float):
     projector = OrthographicProject(prim_path, cell_size, padding=0.0)
@@ -20,9 +22,6 @@ def get_prim_opening_img(prim_path: str, cell_size: float):
     face_on_y, _ = projector.projection_on_xz
 
     return find_opening(face_on_x), find_opening(face_on_y)
-
-
-# cv2.imwrite("face_on_x.png", face_on_x)
 
 def find_opening(img: np.ndarray):
     debug_img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
@@ -39,14 +38,13 @@ def find_opening(img: np.ndarray):
     cluster_areas = stats[1:, cv2.CC_STAT_AREA]
     max_area = np.max(cluster_areas)
 
-
     # Loop starts at 1 to skip the background (label 0)
     opening_rects = []
     
 
     for i in range(1, num_labels):
         # 1. This slice contains exactly [x, y, width, height] -> Your cv.Rect equivalent
-        rect = stats[i, 0:4] 
+        rect = stats[i, 0:4]
         x, y, w, h = rect
         
         # 2. Filter out tiny noise if needed
@@ -62,22 +60,14 @@ def find_opening(img: np.ndarray):
 
     return debug_img
 
-# cv2.imwrite("noiseless_img.png", img)
 
-# inverted_img = cv2.bitwise_not(img)
-# cv2.imwrite("inverted_img.png", inverted_img)
-
-
-# print(f"num_labels: {num_labels}")
-
-face_x_opening, face_y_opening = get_prim_opening_img("/Pallet", cell_size=0.005)
+projector = OrthographicProject(prim_path="/World/Objects", cell_size=0.02, padding=0.1)
+occ_grid, _ = projector.projection_on_xy
+# face_x_opening, face_y_opening = get_prim_opening_img("/Pallet", cell_size=0.005)
 
 
-
-
-
-cv2.imwrite('images/x_opeing.png', face_x_opening)
-cv2.imwrite('images/y_opeing.png', face_y_opening)
+cv2.imwrite('images/occ_grid.png', occ_grid)
+# cv2.imwrite('images/y_opeing.png', face_y_opening)
 
 SIMU_APP.close()
 
