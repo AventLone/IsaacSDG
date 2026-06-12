@@ -1,7 +1,7 @@
 import numpy as np
 from tools import common
 import random
-from isaacsim.core.utils import prims as prims_utils, stage as stage_utils
+from isaacsim.core.utils import prims as prims_utils
 from omni import usd
 from pxr import UsdGeom
 from tools import path_generation
@@ -24,11 +24,11 @@ def can_place_rect(grid: np.ndarray, x, y, w, h, margin=0):
         return False
 
     roi = grid[y0:y1, x0:x1]
-    return np.all(roi == 0)    # valid only if the whole region is free
+    return np.all(roi == 0)    # Valid only if the whole region is free
 
 
 def scatter(prim_pathes: list[str], num_for_each, lower_bound, upper_bound, origin=(0, 0, 0)) -> np.ndarray:
-    this_stage = stage_utils.get_current_stage()
+    this_stage = prims_utils.get_current_stage()
     scatter_prim_path = "/World/Objects/Scatter"
     if not prims_utils.get_prim_at_path(scatter_prim_path).IsValid():
         prims_utils.create_prim(scatter_prim_path)
@@ -41,7 +41,6 @@ def scatter(prim_pathes: list[str], num_for_each, lower_bound, upper_bound, orig
         rect_sizes.append((round(dim_x / resolution), round(dim_y / resolution)))
     rect_sizes = rect_sizes * num_for_each
 
-    # grid_size = round((upper_bound[1] - lower_bound[1]) / resolution), 
     H = round((upper_bound[1] - lower_bound[1]) / resolution)
     W = round((upper_bound[0] - lower_bound[0]) / resolution)
 
@@ -83,3 +82,21 @@ def scatter(prim_pathes: list[str], num_for_each, lower_bound, upper_bound, orig
     return grid, path_generation.pixel_path_to_world_poses(path_px, 
                                                            (origin[0] + lower_bound[0], origin[1] + upper_bound[1]),
                                                            resolution)
+
+
+class Piles:
+    index = 0
+    this_stage = prims_utils.get_current_stage()
+
+    @staticmethod
+    def generate(prim_path: str, parent_prim_path: str, num: int):
+        _, _, height = common.get_dimensions(prim_path)
+        piles_prim_path = f"{parent_prim_path}/piles_{Piles.index}"
+        for i in range(num):
+            component_prim_path = f"{piles_prim_path}/componnet_{i}"
+            usd.duplicate_prim(stage=Piles.this_stage, prim_path=prim_path, path_to=component_prim_path)
+            new_component_pos = (random.uniform(-0.06, 0.06), random.uniform(-0.06, 0.06), height * i)
+            common.set_local_trasform(prim_path, new_component_pos, common.yaw2quat(random.uniform(-10.0, 10.0)))
+        Piles.index += 1
+        return piles_prim_path
+

@@ -1,5 +1,4 @@
 import omni.replicator.core as rep
-import numpy as np
 
 class CameraAndLightRandomizer:
     def __init__(self, camera_path: list[tuple[float, float, float]]) -> None:
@@ -33,8 +32,6 @@ class CameraAndLightRandomizer:
         with self.camera:
             rep.modify.pose(
                 position=rep.distribution.sequence(self._camera_poses),
-                # look_at=self.obj_prim
-                # look_at=(0.0, 0.0, 0.1)
                 look_at=rep.distribution.uniform((-1.0, -1.0, 0.0), (1.0, 1.0, 0.2))
             )
         return self.camera.node
@@ -44,8 +41,27 @@ class CameraAndLightRandomizer:
         with lights:
             rep.modify.attribute("intensity", rep.distribution.choice([1000, 5000, 10000, 20000, 40000, 50000]))
             rep.modify.attribute("color", rep.distribution.uniform((0.0, 0.0, 0.0), (1.0, 1.0, 1.0)))
-        return lights.node # type: ignore
+        return lights.node
     
+
+class LightRandomizer:
+    def __init__(self):
+        self._trigger_light_event = "randomize_light"
+        rep.randomizer.register(self._randomize_light)
+        with rep.trigger.on_custom_event(self._trigger_light_event):
+            rep.randomizer._randomize_light()
+
+    def randomize(self):
+        rep.utils.send_og_event(self._trigger_light_event)
+
+    def _randomize_light(self) -> rep.scripts.utils.ReplicatorItem:
+        lights = rep.get.prims(prim_types=["RectLight", "SphereLight", "DomeLight"])
+        with lights:
+            rep.modify.attribute("intensity", rep.distribution.choice([1000, 5000, 10000, 20000, 40000, 50000]))
+            rep.modify.attribute("color", rep.distribution.uniform((0.0, 0.0, 0.0), (1.0, 1.0, 1.0)))
+        return lights.node
+    
+
 class MaterialRandomizer:
     def __init__(self, prim_path: str, material_count=120) -> None:
         self.obj_prim_path = prim_path     

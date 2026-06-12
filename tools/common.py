@@ -47,10 +47,14 @@ def yaw2quat(yaw: float) -> Sequence[float]:
     # GetReal() is 'w', GetImaginary() is (x, y, z)
     return rotation.GetReal(), *rotation.GetImaginary()
 
-def make_visiable(prim: str | Usd.Prim, visible: bool = True):
+def make_visible(prim: str | Usd.Prim, visible: bool = True):
     prim: Usd.Prim = prim if type(prim) is Usd.Prim else prims_utils.get_prim_at_path(prim)
-    visibility = "visible" if visible else "invisible"
-    prim.GetAttribute("visibility").Set(visibility)
+    # visibility = "visible" if visible else "invisible"
+    # prim.GetAttribute("visibility").Set(visibility)
+    if visible:
+        UsdGeom.Imageable(prim).MakeVisible()
+    else:
+        UsdGeom.Imageable(prim).MakeInvisible()
 
 bbox_cache = bounds_utils.create_bbox_cache()
 

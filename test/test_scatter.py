@@ -10,7 +10,10 @@ tools.app_update(10)
 
 prim_pathes = ["/World/Objects/eu", "/World/Objects/palstic_1", "/World/Objects/plastic_2"]
 
-grid, camera_path = tools.scatter(prim_pathes, num_for_each=5, lower_bound=(-5.0, -4.0), upper_bound=(3.6, 5.0))
+grid, camera_path = tools.scatter(prim_pathes, num_for_each=5, 
+                                  lower_bound=(-5.0, -4.0), upper_bound=(3.6, 5.0))
+
+print(len(camera_path))
 tools.app_update(2)
 
 target_prim_path = "/World/Objects/Obstacles/HeavyDutyTrafficCone_A01_46cm_PR_V_NVD_01"

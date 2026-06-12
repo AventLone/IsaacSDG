@@ -115,7 +115,7 @@ class SDG:
         
     def _random_dome_texture(self):
         display_dome = random.choice([True, False])
-        common.make_visiable(self._environment_prim_path, display_dome)
+        common.make_visible(self._environment_prim_path, display_dome)
         if not display_dome:
             texture = random.choice(self._dome_texture_urls)
             self._dome_texture.Set(texture)

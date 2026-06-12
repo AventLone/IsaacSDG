@@ -2,7 +2,7 @@ VERSION="0.1"
 
 #----------------------------------- Core ------------------------------------------#
 from isaacsim.simulation_app import SimulationApp
-SIMU_APP = SimulationApp({"renderer": "RayTracedLighting", "headless": False})
+SIMU_APP = SimulationApp({"renderer": "RayTracedLighting", "headless": True})
 
 import warp.config
 warp.config.quiet = True
@@ -19,4 +19,4 @@ def app_update(frames: int):
         SIMU_APP.update()
 
 from .path_generation import generate_lawnmower_path
-from .scatter_objects import scatter
+from .scatter_objects import scatter, Piles

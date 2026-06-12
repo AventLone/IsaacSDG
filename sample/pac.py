@@ -6,7 +6,7 @@ from typing import Literal
 from isaacsim.core.utils import stage, prims as prims_utils, xforms
 from isaacsim.core.prims import SingleXFormPrim
 from omni import usd
-from tools.common import make_visiable, get_dimensions, set_local_trasform, yaw2quat
+from tools.common import make_visible, get_dimensions, set_local_trasform, yaw2quat
 from pxr import Usd
 
 class PermuAndCombi:
@@ -27,7 +27,7 @@ class PermuAndCombi:
         self.column_prims: list[Usd.Prim] = []
 
         for prim_path in prim_paths:
-            make_visiable(prim_path, False)
+            make_visible(prim_path, False)
 
         self._trigger = asyncio.Event()
         self._finished = asyncio.Event()
@@ -64,7 +64,7 @@ class PermuAndCombi:
         component_path = f"{col_prim_path}/component1"
         random_component = random.choice(self._component_prim_paths)
         usd.duplicate_prim(self._stage, prim_path=random_component, path_to=component_path)
-        make_visiable(component_path)
+        make_visible(component_path)
 
         if col_idx > 1:
             pre_col_prim_path = f"{self.prim_path}/Col{col_idx - 1}"
@@ -90,7 +90,7 @@ class PermuAndCombi:
             # random_component = random.choice(self._component_prim_paths)
             random_component = self._component_prim_paths[col_idx] if col_idx +1 <= component_count else random.choice(self._component_prim_paths)
             usd.duplicate_prim(self._stage, prim_path=random_component, path_to=component_path)
-            make_visiable(component_path)
+            make_visible(component_path)
             dimensions_x, dimensions_y, _ = get_dimensions(component_path)
             dimensions_x_list.append(dimensions_x)
             dimensions_y_list.append(dimensions_y)

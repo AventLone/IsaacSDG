@@ -11,8 +11,10 @@ class CocoInstanceSegWriter(CocoWriter):
             "instance_segmentation", init_params={"semanticTypes": self.semantic_types}))
         self.label_dict = {
             'pallet': {'name': 'pallet', 'id': 1, 'supercategory': 'loads', 'color': (220, 20, 60), 'isthing': 1},
-            'storage_cage': {'name': 'storage_cage', 'id': 2, 'supercategory': 'loads', 'color': (220, 20, 60), 'isthing': 1},
-            'goods': {'name': 'goods', 'id': 3, 'supercategory': 'loads', 'color': (119, 11, 32), 'isthing': 1}
+            'plastic_pallet_1': {'name': 'plastic_pallet_1', 'id': 2, 'supercategory': 'loads', 'color': (220, 20, 60), 'isthing': 1},
+            'plastic_pallet_2': {'name': 'plastic_pallet_2', 'id': 3, 'supercategory': 'loads', 'color': (220, 20, 60), 'isthing': 1},
+            'KKP': {'name': 'KKP', 'id': 4, 'supercategory': 'loads', 'color': (220, 20, 60), 'isthing': 1},
+            'goods': {'name': 'goods', 'id': 5, 'supercategory': 'loads', 'color': (119, 11, 32), 'isthing': 1}
         }
         
     def write(self, data: dict):
@@ -53,6 +55,7 @@ class CocoInstanceSegWriter(CocoWriter):
         if self._frame_id % 25 == 0:
             # periodically write the annotation file to avoid data loss
             self._write_coco_annotation_file()
+
 
     def _write_instance_annotation_segment(self, annotator_dict, image_id):
         instance_map = annotator_dict["data"]
