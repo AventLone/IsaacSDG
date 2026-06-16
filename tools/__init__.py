@@ -2,7 +2,7 @@ VERSION="0.1"
 
 #----------------------------------- Core ------------------------------------------#
 from isaacsim.simulation_app import SimulationApp
-SIMU_APP = SimulationApp({"renderer": "RayTracedLighting", "headless": True})
+SIMU_APP = SimulationApp({"renderer": "RayTracedLighting", "headless": False})
 
 import warp.config
 warp.config.quiet = True
@@ -24,7 +24,7 @@ def app_loop():
     SIMU_APP.close()
 
 from .path_generation import generate_lawnmower_path
-from .scatter_objects import scatter, Pile
+from .scatter_objects import scatter, Pile, LoadedPallet
 
 from .evaluate_coco_dataset import audit_coco
 

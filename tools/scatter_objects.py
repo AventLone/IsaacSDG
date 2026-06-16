@@ -7,8 +7,11 @@ from pxr import UsdGeom
 from tools import path_generation
 import cv2
 # import isaacsim.core.experimental.utils.semantics as semantics_utils
+import isaacsim.core.utils.semantics as semantics_utils
+from isaacsim.core.utils import bounds as bounds_utils
+
 from pxr import Gf, Usd, UsdGeom, UsdPhysics, UsdShade, PhysicsSchemaTools, PhysxSchema
-import omni.timeline, omni.physx, carb
+import omni.usd, omni.physx, carb
 from itertools import chain
 
 def can_place_rect(grid: np.ndarray, x, y, w, h, margin=0):
@@ -111,96 +114,146 @@ class Pile:
     
 class LoadedPallet:
     index = 0
-    # this_stage = prims_utils.get_current_stage()
     assets_urls_and_weights = None
-    timeline = omni.timeline.get_timeline_interface()
+    box_prim_paths_and_weights: list[tuple[str, float]] = []
+    default_material: UsdShade.Material = None
+    physics_material: UsdPhysics.MaterialAPI = None
+    
     @staticmethod
-    def set_assets(assets_urls_and_weights):
+    def set_assets(assets_urls_and_weights: list[tuple[str, float]]):
         LoadedPallet.assets_urls_and_weights = assets_urls_and_weights
 
-    @staticmethod
-    async def generate(prim_path: str, parent_prim_path: str, num: int):
-        this_stage = prims_utils.get_current_stage()
-        pallet_prim = prims_utils.get_prim_at_path()
+        assets_prim_path = "/Assets"
+        assets_boxes_path = f"{assets_prim_path}/Boxes"
+        assets_piles_path = f"{assets_prim_path}/Piles"
+        assets_loaded_path = f"{assets_prim_path}/Loaded"
+        if not prims_utils.is_prim_path_valid(assets_prim_path):
+            prims_utils.create_prim(assets_prim_path)
+
+        if not prims_utils.is_prim_path_valid(assets_boxes_path):
+            prims_utils.create_prim(assets_boxes_path, prim_type="Scope")
+
+        if not prims_utils.is_prim_path_valid(assets_piles_path):
+            prims_utils.create_prim(assets_piles_path, prim_type="Scope")
+
+        if not prims_utils.is_prim_path_valid(assets_loaded_path):
+            prims_utils.create_prim(assets_loaded_path, prim_type="Scope")
+
+        # for i, (box_url, weight) in enumerate(assets_urls_and_weights):
+        #     prim_path = f"{assets_boxes_path}/box_{i}"
+        #     prims_utils.add_reference_to_stage(usd_path=box_url, prim_path=prim_path)
+        #     LoadedPallet.box_prim_paths_and_weights.append((prim_path, weight))
+        
         # Create a custom physics material to allow the boxes to easily slide into stacking positions
+        this_stage = prims_utils.get_current_stage()
         physics_material_prim_path = "/VolumeStackLooks"
         material_path = "/VolumeStackLooks/PhysicsMaterial"
         if not prims_utils.is_prim_path_valid(physics_material_prim_path):
             prims_utils.create_prim("/VolumeStackLooks", prim_type="Scope")
-            default_material = UsdShade.Material.Define(this_stage, material_path)
+            LoadedPallet.default_material = UsdShade.Material.Define(this_stage, material_path)
         else:
             material_prim = prims_utils.get_prim_at_path(material_path)
-            default_material = UsdShade.Material(material_prim)
-        physics_material = UsdPhysics.MaterialAPI.Apply(default_material.GetPrim())
-        physics_material.CreateRestitutionAttr().Set(0.0)  # Inelastic collision (no bouncing)
-        physics_material.CreateStaticFrictionAttr().Set(0.01)  # Small friction to allow sliding of stationary boxes
-        physics_material.CreateDynamicFrictionAttr().Set(0.01)  # Small friction to allow sliding of moving boxes
+            LoadedPallet.default_material = UsdShade.Material(material_prim)
+        LoadedPallet.physics_material = UsdPhysics.MaterialAPI.Apply(LoadedPallet.default_material.GetPrim())
+        LoadedPallet.physics_material.CreateRestitutionAttr().Set(0.0)        # Inelastic collision (no bouncing)
+        LoadedPallet.physics_material.CreateStaticFrictionAttr().Set(0.001)   # Small friction to allow sliding of stationary boxes
+        LoadedPallet.physics_material.CreateDynamicFrictionAttr().Set(0.001)  # Small friction to allow sliding of moving boxes
 
+
+    @staticmethod
+    async def generate(prim_path: str, pallet_name: str, num_boxes: int, overhang=0.1):
+        if LoadedPallet.assets_urls_and_weights is None:
+            raise ValueError("Please set assets_urls_and_weights before call `generate`!")
+        bbox_cache = bounds_utils.create_bbox_cache()
+        this_stage = prims_utils.get_current_stage()
+
+        LoadedPallet.physics_material.CreateStaticFrictionAttr().Set(0.001)
+        LoadedPallet.physics_material.CreateDynamicFrictionAttr().Set(0.001)
+
+        if not prims_utils.is_prim_path_valid(f"/Assets/Loaded/{pallet_name}"):
+            prims_utils.create_prim(f"/Assets/Loaded/{pallet_name}")
+        loaded_pallet_prim_path = f"/Assets/Loaded/{pallet_name}/loaded_{LoadedPallet.index}"
+        # prims_utils.create_prim(loaded_pallet_prim_path, position=(150.0 + LoadedPallet.index * 3.0, 150.0, 0.0))
+        prims_utils.create_prim(loaded_pallet_prim_path)
+        omni.usd.duplicate_prim(this_stage, prim_path=prim_path, path_to=loaded_pallet_prim_path)
+        common.set_local_trasform(loaded_pallet_prim_path, translation=(150.0 + LoadedPallet.index * 3.0, 150.0, 0.0))
+       
+        pallet_prim = prims_utils.get_prim_at_path(loaded_pallet_prim_path)
         # Apply the physics material to the pallet
         common.add_colliders(pallet_prim, approx_type="convexDecomposition")
         mat_binding_api = UsdShade.MaterialBindingAPI.Apply(pallet_prim)
-        mat_binding_api.Bind(default_material, UsdShade.Tokens.weakerThanDescendants, "physics")
+        mat_binding_api.Bind(LoadedPallet.default_material, UsdShade.Tokens.weakerThanDescendants, "physics")
 
+        drop_height= 3.6
+        drop_margin = 0.4
         # Create collision walls around the top of the pallet and apply the physics material to them
-        collision_walls = create_collision_walls(pallet_prim,
+        collision_walls = LoadedPallet.create_collision_walls(pallet_prim,
                                                 height=drop_height + drop_margin,
-                                                material=default_material)
+                                                material=LoadedPallet.default_material)
 
         # Create the random boxes (without physics) with the specified weights and sort them by size (volume)
-        box_urls, box_weights = zip(*boxes_urls_and_weights)
+        # box_assets, box_weights = zip(*LoadedPallet.box_prim_paths_and_weights)
+        # rand_boxes = random.choices(box_assets, weights=box_weights, k=num_boxes)
+        # boxes_prim = prims_utils.create_prim(f"{loaded_pallet_prim_path}/Boxes")
+
+        box_urls, box_weights = zip(*LoadedPallet.assets_urls_and_weights)
         rand_boxes_urls = random.choices(box_urls, weights=box_weights, k=num_boxes)
-        box_prims = list()
-        boxes_prim = prims_utils.create_prim(f"{prim_path}/Boxes")
+        boxes_prim = prims_utils.create_prim(f"{loaded_pallet_prim_path}/Boxes")
+        box_prims = [prims_utils.add_reference_to_stage(usd_path=box_url, prim_path=f"{loaded_pallet_prim_path}/Boxes/Box_{i}")
+             for i, box_url in enumerate(rand_boxes_urls)]
 
-        box_prims = [stage_utils.add_reference_to_stage(usd_path=box_url, prim_path=f"{prim_path}/Boxes/Box_{i}")
-                for i, box_url in enumerate(rand_boxes_urls)]
         box_prims.sort(key=lambda box: bbox_cache.ComputeLocalBound(box).GetVolume(), reverse=True)
-
-        pallet_dimensions_x, pallet_dimensions_y, _ = get_dimensions(pallet_prim)
+        pallet_dimensions_x, pallet_dimensions_y, _ = common.get_dimensions(pallet_prim)
 
         # Simulate dropping the boxes from random poses on the pallet
         random_range_x = pallet_dimensions_x / 3.0
         random_range_y = pallet_dimensions_y / 3.0
     
         for box_prim in box_prims:
-            set_local_trasform(box_prim, [random.uniform(-random_range_x, random_range_x), 
+            
+            common.set_local_trasform(box_prim, [random.uniform(-random_range_x, random_range_x), 
                                         random.uniform(-random_range_y, random_range_y), drop_height])
-            add_colliders(box_prim, approx_type="convexHull")
-            add_rigid_body_dynamics(box_prim, angular_damping=0.9)
+            common.add_colliders(box_prim, approx_type="convexHull")
+            common.add_rigid_body_dynamics(box_prim, angular_damping=0.9)
             
             # Bind the physics material to the box (allow frictionless sliding)
             mat_binding_api = UsdShade.MaterialBindingAPI.Apply(box_prim)
-            mat_binding_api.Bind(default_material, UsdShade.Tokens.weakerThanDescendants, "physics")
-            # Wait for an app update to load the new attributes
-            await app_interface.next_update_async()
+            mat_binding_api.Bind(LoadedPallet.default_material, UsdShade.Tokens.weakerThanDescendants, "physics")
+            await common.app_update()   # Wait for an app update to load the new attributes
 
             # Play simulation for a few frames for each box
-            timeline.play()
-            await wait_for(20)
-            timeline.pause()
+            common.timeline.play()
+            await common.wait_for(30)
+            common.timeline.pause()
 
         # Iteratively apply forces to the boxes to move them around then pull them all together towards the pallet center
-        await apply_forces_async(box_prims, pallet_prim, strength=1000)
+        await LoadedPallet.apply_forces_async(box_prims, pallet_prim, strength=1000)
 
         # Remove rigid body dynamics of the boxes until all other scenarios are completed
         for box in box_prims:
             UsdPhysics.RigidBodyAPI(box).GetRigidBodyEnabledAttr().Set(False)
 
         # Increase the friction to prevent sliding of the boxes on the pallet before removing the collision walls
-        physics_material.CreateStaticFrictionAttr().Set(0.999)
-        physics_material.CreateDynamicFrictionAttr().Set(0.999)
+        LoadedPallet.physics_material.CreateStaticFrictionAttr().Set(0.999)
+        LoadedPallet.physics_material.CreateDynamicFrictionAttr().Set(0.999)
 
         # Remove collision walls
         for wall in collision_walls:
             this_stage.RemovePrim(wall.GetPath())
 
-        semantics_utils.remove_all_labels(boxes_prim, include_descendants=True)
+        # semantics_utils.remove_all_labels(boxes_prim, include_descendants=True)
+        # semantics_utils.remove_labels(boxes_prim, instance_name="class", include_descendants=True)
+        semantics_utils.remove_all_semantics(boxes_prim, recursive=True)
         semantics_utils.add_labels(boxes_prim, labels=["goods"])
         overhang = abs(overhang)
         if overhang > 0.0:
-            set_local_trasform(boxes_prim, translation=[random.uniform(-overhang, overhang),
+            common.set_local_trasform(boxes_prim, translation=[random.uniform(-overhang, overhang),
                                                         random.uniform(-overhang, overhang), 0.0])
+            
+        LoadedPallet.index += 1
+        return loaded_pallet_prim_path
     
+    @staticmethod
     def create_collision_walls(prim: Usd.Prim, height=4.6, thickness=0.1, material=None, visible=False) -> list[Usd.Prim]:
         dimensions_x, dimensions_y, _ = common.get_dimensions(prim)
 
@@ -229,8 +282,9 @@ class LoadedPallet:
 
 
     # Slide the assets independently in perpendicular directions and then pull them all together towards the given center
+    @staticmethod
     async def apply_forces_async(boxes: list[Usd.Prim], pallet, strength=550, strength_center_multiplier=2):
-        LoadedPallet.timeline.play()
+        common.timeline.play()
         # Get the pallet center and forward vector to apply forces in the perpendicular directions and towards the center
         pallet_tf: Gf.Matrix4d = UsdGeom.Xformable(pallet).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
         pallet_center = pallet_tf.ExtractTranslation()
@@ -247,9 +301,7 @@ class LoadedPallet:
                 box_tf: Gf.Matrix4d = UsdGeom.Xformable(box_prim).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
                 box_position = carb.Float3(*box_tf.ExtractTranslation())
                 physx_api.apply_force_at_pos(stage_id, body_path, carb.Float3(force), box_position, "Force")
-                
-                # for _ in range(10):
-                await common.wait_for(2)
+                await common.wait_for(3)
 
         # Pull all box at once to the pallet center
         for box_prim in boxes:
@@ -260,5 +312,5 @@ class LoadedPallet:
             physx_api.apply_force_at_pos(stage_id, body_path, carb.Float3(*force_to_center), carb.Float3(*box_location))
 
         await common.wait_for(20)
-        LoadedPallet.timeline.pause()
+        common.timeline.pause()
 

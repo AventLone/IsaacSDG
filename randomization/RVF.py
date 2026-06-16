@@ -3,14 +3,14 @@ Physics-based Randomized Volume Filling
 """
 import random, omni.timeline, omni.kit.app
 from itertools import chain
-from tools.common import set_local_trasform, get_dimensions, bbox_cache
+from tools.common import set_local_trasform, get_dimensions
 import isaacsim.core.utils.semantics as semantics_utils
 # import isaacsim.core.experimental.utils.semantics as semantics_utils
-from semantics.schema.editor import remove_prim_semantics
+# from semantics.schema.editor import remove_prim_semantics
 
 import carb
 import omni.kit.app, omni.physx
-from isaacsim.core.utils import stage as stage_utils, prims as prims_utils
+from isaacsim.core.utils import stage as stage_utils, prims as prims_utils, bounds as bounds_utils
 from pxr import Gf, Usd, UsdGeom, UsdPhysics, UsdShade, PhysicsSchemaTools, PhysxSchema
 from typing import Literal
 
@@ -206,6 +206,7 @@ async def volume_stack(pallet_prims: list[Usd.Prim], boxes_urls_and_weights: lis
         rand_boxes_urls = random.choices(box_urls, weights=box_weights, k=boxes_nums[i])
         box_prims = [stage_utils.add_reference_to_stage(usd_path=box_url, prim_path=f"{pallet_prim_path}/Boxes/Box_{i}")
              for i, box_url in enumerate(rand_boxes_urls)]
+        bbox_cache = bounds_utils.create_bbox_cache()
         box_prims.sort(key=lambda box: bbox_cache.ComputeLocalBound(box).GetVolume(), reverse=True)
         box_prims_list.append(box_prims)
 
@@ -296,6 +297,7 @@ async def stack_boxes_on_pallet_async(pallet_prim: Usd.Prim, boxes_urls_and_weig
 
     box_prims = [stage_utils.add_reference_to_stage(usd_path=box_url, prim_path=f"{pallet_path}/Boxes/Box_{i}")
              for i, box_url in enumerate(rand_boxes_urls)]
+    bbox_cache = bounds_utils.create_bbox_cache()
     box_prims.sort(key=lambda box: bbox_cache.ComputeLocalBound(box).GetVolume(), reverse=True)
 
     pallet_dimensions_x, pallet_dimensions_y, _ = get_dimensions(pallet_prim)

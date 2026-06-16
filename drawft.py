@@ -23,7 +23,6 @@ from randomization import LooksRandomizer
 
 
 class SDG(BaseSDG):
-    
     def __init__(self, stage_url: str, dome_texture_urls: list, 
                  boxes_urls_and_weights: Optional[list]=None,
                  save_path=None) -> None:
@@ -33,6 +32,8 @@ class SDG(BaseSDG):
             raise RuntimeError(f"Failed to open {stage_url}")
         tools.app_update(2)
         LOGGER.info("SDG is starting...")
+
+        tools.LoadedPallet.set_assets(boxes_urls_and_weights)
         
         self._this_stage = prims_utils.get_current_stage()
         
@@ -58,21 +59,28 @@ class SDG(BaseSDG):
         # prepared_prim_paths = ["/World/Objects/Prepared/eu", "/World/Objects/Prepared/plastic_1", 
         #                    "/World/Objects/Prepared/plastic_2", "/World/Objects/Prepared/KKP"]
         pile_prim_paths = {"eu": list(), "plastic_1": list(), "plastic_2": list()}
+        loaded_pallet_paths = {"eu": list(), "plastic_1": list(), "plastic_2": list(), "KKP": list()}
+        num_piles = len(pile_prim_paths) * 4
+        num_loaded_pallets = len(loaded_pallet_paths) * 5
 
-        with tqdm(total=len(pile_prim_paths) * 4, desc="Preparation Progress", unit=" unit", file=sys.stdout) as pbar:
+        with tqdm(total=num_piles + num_loaded_pallets, desc="Preparation Progress", unit=" unit", file=sys.stdout) as pbar:
             # 1. Create piles
-            parent_prim_path = "/World/Objects/Piles"
+            parent_prim_path = "/Assets/Piles"
             for pallet_name, piles in pile_prim_paths.items():
                 for i in range(2, 6):
                     piles.append(tools.Pile.generate(f"/World/Objects/Prepared/{pallet_name}", parent_prim_path, i))
                     pbar.update(1)
 
-        # 2. Create pallets with goods
-        parent_prim_path = "/World/Objects/WithGoods"
+            # 2. Create pallets with goods
+            parent_prim_path = "/Assets/LoadedPallets"
+            for pallet_name, loaded_pallets in loaded_pallet_paths.items():
+                for i in range(5):
+                    box_num = random.randint(i + 2, 3 * i + 8)
+                    loaded_pallet = await tools.LoadedPallet.generate(f"/World/Objects/Prepared/{pallet_name}", pallet_name, box_num)
+                    loaded_pallets.append(loaded_pallet)
+                    pbar.update(1)
 
-        await asyncio.sleep(0.001)
-
-        return pile_prim_paths
+        return pile_prim_paths, loaded_pallet_paths
 
         
     def scatter_objects(self, prim_pathes, num_for_each):
@@ -86,7 +94,7 @@ class SDG(BaseSDG):
         if i % 5 == 0:
             self._light_randomizer.randomize()
 
-        await common.wait_for(1)
+        await common.app_update()
 
 
     async def generate(self):
@@ -95,14 +103,21 @@ class SDG(BaseSDG):
         TARGETS = [(-5.0, 0.0, 0.0), (0.0, 5.0, 0.0), (3.6, 0.0, 0.0), (0.0, -4.0, 0.0), (0.0, 0.0, 0.0)]
 
         await common.wait_for(2)
-        pile_prim_paths = await self.prepare_objects()
+        pile_prim_paths, loaded_pallet_paths = await self.prepare_objects()
         await common.wait_for(2)
 
         for num_for_each in range(3, 6):
-            prim_pathes = [random.choice(piles) for _, piles in pile_prim_paths.items()]
-            prim_pathes.append("/World/Objects/Prepared/KKP")
+            scatter_components = []
+            if random.random() < 0.1:
+                piles = [random.choice(piles) for _, piles in pile_prim_paths.items()]
+                piles.append("/World/Objects/Prepared/KKP")
+                piles.append("/World/Objects/Prepared/KKP")
+                piles.append("/World/Objects/Prepared/KKP")
+                scatter_components.extend(piles)
+            loaded = [random.choice(loaded) for _, loaded in loaded_pallet_paths.items()]
+            scatter_components.extend(loaded)
             scatter_prim_path = "/World/Objects/Scatter"
-            camera_path = self.scatter_objects(prim_pathes, num_for_each)
+            camera_path = self.scatter_objects(scatter_components, num_for_each)
             self._looks_randomizer.set_prim(scatter_prim_path)
 
             with tqdm(total=len(camera_path) * len(TARGETS), 
@@ -125,10 +140,10 @@ class SDG(BaseSDG):
 
 def main() -> None:
     boxes_urls_and_weights = [
-        ("/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxA_01.usd", 0.1),
-        ("/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxB_01.usd", 0.12),
-        ("/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxC_01.usd", 0.22),
-        ("/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxD_01.usd", 0.56)
+        ("/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxA_01.usd", 0.02),
+        ("/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxB_01.usd", 0.06),
+        ("/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxC_01.usd", 0.12),
+        ("/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxD_01.usd", 0.8)
     ]
 
     dome_textures = common.find_files("/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1/NVIDIA/Assets/Skies", "hdr")
@@ -136,7 +151,7 @@ def main() -> None:
     sdg_train = SDG(stage_url="/home/avent/Desktop/IsaacAssets/SDG-Only/warehouse_stage.usd", 
                     dome_texture_urls=dome_textures,
                     boxes_urls_and_weights=boxes_urls_and_weights,
-                    save_path="/media/avent/DATA/generated_data/valid")
+                    save_path="/media/avent/DATA/generated_data/train")
     try:
         tools.SIMU_APP.run_coroutine(sdg_train.generate())
     except KeyboardInterrupt:
@@ -144,10 +159,11 @@ def main() -> None:
     except Exception as e:
         LOGGER.error(f"Something went wrong: {e}")
     finally:
-        tools.app_update(2)
-        sdg_train.evaluate_datset()
-        tools.SIMU_APP.close()
-            
+        # tools.app_update(2)
+        # sdg_train.evaluate_datset()
+        # tools.SIMU_APP.close()
+        tools.app_loop()
+        
 
 if __name__ == "__main__":
     main()

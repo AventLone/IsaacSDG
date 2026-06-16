@@ -12,6 +12,9 @@ async def wait_for(frames: int):
     for _ in range(frames):
         await app_interface.next_update_async()
 
+async def app_update():
+    await app_interface.next_update_async()
+
 def find_files(dir: str, extension: str, recursive=True):
     # 拼接匹配模式，** 表示递归匹配任意层级的子文件夹
     search_pattern = os.path.join(dir, "**", f"*{extension}")
@@ -55,12 +58,13 @@ def make_visible(prim: str | Usd.Prim, visible: bool = True):
     else:
         UsdGeom.Imageable(prim).MakeInvisible()
 
-bbox_cache = bounds_utils.create_bbox_cache()
+# bbox_cache = bounds_utils.create_bbox_cache()
 
 def get_dimensions(prim: str | Usd.Prim):
     """
     Calculate dimensions (x, y, z)
     """
+    bbox_cache = bounds_utils.create_bbox_cache()
     prim_path = str(prim.GetPrimPath()) if isinstance(prim, Usd.Prim) else prim
     aabb = bounds_utils.compute_aabb(bbox_cache, prim_path) # [min x, min y, min z, max x, max y, max z]
     return float(aabb[3] - aabb[0]), float(aabb[4] - aabb[1]), float(aabb[5] - aabb[2])
