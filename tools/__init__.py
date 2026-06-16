@@ -18,5 +18,14 @@ def app_update(frames: int):
     for _ in range(frames):
         SIMU_APP.update()
 
+def app_loop():
+    while SIMU_APP.is_running():
+        SIMU_APP.update()
+    SIMU_APP.close()
+
 from .path_generation import generate_lawnmower_path
-from .scatter_objects import scatter, Piles
+from .scatter_objects import scatter, Pile
+
+from .evaluate_coco_dataset import audit_coco
+
+from .logger import LOGGER

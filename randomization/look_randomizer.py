@@ -63,10 +63,10 @@ class LooksRandomizer:
             shader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).Set(
                 Gf.Vec3f(random.uniform(0.0, 1.0), random.uniform(0.0, 1.0), random.uniform(0.0, 1.0)))
             
-            shader.CreateInput("roughness", Sdf.ValueTypeNames.Float).Set(random.uniform(0.0, 1.0))
-            shader.CreateInput("metallic", Sdf.ValueTypeNames.Float).Set(random.uniform(0.0, 1.0))
-            shader.CreateInput("opacity", Sdf.ValueTypeNames.Float).Set(random.uniform(0.9, 1.0))      # 完全透明
-            shader.CreateInput("ior", Sdf.ValueTypeNames.Float).Set(random.uniform(0.1, 1.0))          # 折射率设为1.0（与空气一致，消除折射扭曲）
+            shader.CreateInput("roughness", Sdf.ValueTypeNames.Float).Set(random.uniform(0.01, 1.0))
+            shader.CreateInput("metallic", Sdf.ValueTypeNames.Float).Set(random.uniform(0.01, 1.0))
+            # shader.CreateInput("opacity", Sdf.ValueTypeNames.Float).Set(random.uniform(0.9, 1.0))      # 完全透明
+            # shader.CreateInput("ior", Sdf.ValueTypeNames.Float).Set(random.uniform(0.1, 1.0))          # 折射率设为1.0（与空气一致，消除折射扭曲）
 
             material.CreateSurfaceOutput().ConnectToSource(shader.ConnectableAPI(), "surface")
             self._materials.append(material)

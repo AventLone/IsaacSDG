@@ -21,26 +21,6 @@ import numpy as np
 
 from randomization import LooksRandomizer
 
-# async def prepare_loads_with_goods(prim_paths: list[str], loads_count: int, boxes_urls_and_weights: list):
-#     pca_list = []
-#     idx = 0.0
-   
-#     with tqdm(total=len(prim_paths) * loads_count, desc="Preparation Progress", unit="Pallet", file=sys.stdout) as pbar:
-#         for prim_path in prim_paths:
-#             pca = PermuAndCombi([prim_path])
-#             pca.set_pose(translation=(0.0, 999.0 + idx, 0.0), yaw=0.0)
-#             pca.create_columns(columns=loads_count, direction='x', gap=0.2)
-
-#             for col in pca.column_prims:
-#                 num_boxes = random.randint(10, 50)
-#                 await stack_boxes_on_pallet_async(pallet_prim=col, boxes_urls_and_weights=boxes_urls_and_weights,
-#                                                   num_boxes=num_boxes, overhang=0.1)
-#                 pbar.update(1)
-
-#             pca_list.append(pca)
-#             idx += 3.6
-#     return pca_list
-
 
 class SDG(BaseSDG):
     
@@ -51,6 +31,8 @@ class SDG(BaseSDG):
 
         if not stage_utils.open_stage(stage_url):
             raise RuntimeError(f"Failed to open {stage_url}")
+        tools.app_update(2)
+        LOGGER.info("SDG is starting...")
         
         self._this_stage = prims_utils.get_current_stage()
         
@@ -59,12 +41,10 @@ class SDG(BaseSDG):
         self._dome_prim = prims_utils.create_prim(prim_path=self._dome_prim_path, prim_type="DomeLight",
                                             attributes={"inputs:intensity": 1000.0,
                                                         "inputs:texture:file": dome_texture_urls[0]})
-        # 2. Get the specific texture attribute
         self._dome_texture = self._dome_prim.GetAttribute("inputs:texture:file")
 
         self._light_randomizer = LightRandomizer()
-        self._looks_randomizer = LooksRandomizer()
-        # self._material_randomizer = MaterialRandomizer(self._pac.prim_path)
+        self._looks_randomizer = LooksRandomizer(random_looks_count=300)
         self.create_camera()
 
     def _random_dome_texture(self, show_environment_prob: float = 0.5):
@@ -75,54 +55,69 @@ class SDG(BaseSDG):
         self._dome_texture.Set(random.choice(self._dome_texture_urls))
 
     async def prepare_objects(self):
-        prepared_prim_paths = ["/World/Objects/Prepared/eu", "/World/Objects/Prepared/palstic_1", 
-                           "/World/Objects/Prepared/plastic_2", "/World/Objects/Prepared/KKP"]
-        pass
+        # prepared_prim_paths = ["/World/Objects/Prepared/eu", "/World/Objects/Prepared/plastic_1", 
+        #                    "/World/Objects/Prepared/plastic_2", "/World/Objects/Prepared/KKP"]
         pile_prim_paths = {"eu": list(), "plastic_1": list(), "plastic_2": list()}
 
-        # 1. Create piles
-        for prim_path in prepared_prim_paths[:3]:
-
-            a = tools.Piles.generate(parent_prim_path="/World/Objects/Piles")
+        with tqdm(total=len(pile_prim_paths) * 4, desc="Preparation Progress", unit=" unit", file=sys.stdout) as pbar:
+            # 1. Create piles
+            parent_prim_path = "/World/Objects/Piles"
+            for pallet_name, piles in pile_prim_paths.items():
+                for i in range(2, 6):
+                    piles.append(tools.Pile.generate(f"/World/Objects/Prepared/{pallet_name}", parent_prim_path, i))
+                    pbar.update(1)
 
         # 2. Create pallets with goods
+        parent_prim_path = "/World/Objects/WithGoods"
 
+        await asyncio.sleep(0.001)
 
+        return pile_prim_paths
 
-
+        
     def scatter_objects(self, prim_pathes, num_for_each):
-        _, camera_path = tools.scatter(prim_pathes, num_for_each=num_for_each,
-                                       lower_bound=(-5.0, -4.0), upper_bound=(3.6, 5.0))
-        return camera_path[::100]   # Takes every 5th element from the path
+        _, camera_path = tools.scatter(prim_pathes, num_for_each, (-5.0, -4.0), (3.6, 5.0))
+        return camera_path[::300]   # Takes every 5th element from the path
 
-    def randomize_scene(self, i):
+    async def randomize_scene(self, i):
         self._random_dome_texture(show_environment_prob=0.7)
         if i % 2 == 0:
             self._looks_randomizer.randomize()
         if i % 5 == 0:
             self._light_randomizer.randomize()
 
+        await common.wait_for(1)
 
-    async def generate(self, sample_interval: int):
-        prim_pathes = ["/World/Objects/eu", "/World/Objects/palstic_1", "/World/Objects/plastic_2"]
-        targets = [(-5.0, 0.0, 0.0), (0.0, 5.0, 0.0), (3.6, 0.0, 0.0), (0.0, -4.0, 0.0), (0.0, 0.0, 0.0)]
 
-        await self.prepare_objects()
-        
-        scatter_prim_path = "/World/Objects/Scatter"
-        camera_path = self.scatter_objects(prim_pathes, 5)
+    async def generate(self):
+        # prim_pathes =  ["/World/Objects/Prepared/eu", "/World/Objects/Prepared/palstic_1", 
+        #                    "/World/Objects/Prepared/plastic_2", "/World/Objects/Prepared/KKP"]
+        TARGETS = [(-5.0, 0.0, 0.0), (0.0, 5.0, 0.0), (3.6, 0.0, 0.0), (0.0, -4.0, 0.0), (0.0, 0.0, 0.0)]
 
-        self._looks_randomizer.set_prim(scatter_prim_path)
+        await common.wait_for(2)
+        pile_prim_paths = await self.prepare_objects()
+        await common.wait_for(2)
 
-        with tqdm(total=len(camera_path) * len(targets), desc="SDG Progress", unit=" Frames", file=sys.stdout) as pbar:
-            for i, camera_pose in enumerate(camera_path):
-                self.randomize_scene(i)
-                for target in targets:
-                    self.set_camera_pose_lootat((camera_pose[0], camera_pose[1], 0.75), lookat_target=target)
-                    await rep.orchestrator.step_async(rt_subframes=6)
-                    pbar.update(1)
+        for num_for_each in range(3, 6):
+            prim_pathes = [random.choice(piles) for _, piles in pile_prim_paths.items()]
+            prim_pathes.append("/World/Objects/Prepared/KKP")
+            scatter_prim_path = "/World/Objects/Scatter"
+            camera_path = self.scatter_objects(prim_pathes, num_for_each)
+            self._looks_randomizer.set_prim(scatter_prim_path)
 
-        self._this_stage.RemovePrim(scatter_prim_path)
+            with tqdm(total=len(camera_path) * len(TARGETS), 
+                      desc=f"SDG Progress {num_for_each}", unit=" Frames", file=sys.stdout) as pbar:
+                for i, camera_pose in enumerate(camera_path):
+                    await self.randomize_scene(i)
+                    for target in TARGETS:
+                        self.set_camera_pose_lootat((camera_pose[0], camera_pose[1], random.uniform(0.5, 1.2)),
+                                                    lookat_target=target)
+                        await rep.orchestrator.step_async(rt_subframes=16)
+                        pbar.update(1)
+
+            await common.wait_for(2)
+            self._this_stage.RemovePrim(scatter_prim_path)
+            await common.wait_for(2)
         
         await rep.orchestrator.wait_until_complete_async()
         self.detach_renderproduct()
@@ -136,20 +131,23 @@ def main() -> None:
         ("/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1/Isaac/Environments/Simple_Warehouse/Props/SM_CardBoxD_01.usd", 0.56)
     ]
 
-    dome_textures = common.find_files(
-        "/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1/NVIDIA/Assets/Skies", "hdr")
+    dome_textures = common.find_files("/home/avent/Desktop/IsaacAssets/isaac-sim-assets-complete-5.1.0/Assets/Isaac/5.1/NVIDIA/Assets/Skies", "hdr")
 
     sdg_train = SDG(stage_url="/home/avent/Desktop/IsaacAssets/SDG-Only/warehouse_stage.usd", 
                     dome_texture_urls=dome_textures,
                     boxes_urls_and_weights=boxes_urls_and_weights,
-                    save_path="/media/avent/DATA/generated_data/train")
+                    save_path="/media/avent/DATA/generated_data/valid")
     try:
-        tools.SIMU_APP.run_coroutine(sdg_train.generate(sample_interval=3))
+        tools.SIMU_APP.run_coroutine(sdg_train.generate())
+    except KeyboardInterrupt:
+        LOGGER.warning("Simulation interrupted by user (Ctrl+C). Cleaning up...")
     except Exception as e:
         LOGGER.error(f"Something went wrong: {e}")
     finally:
-        tools.app_update(5)
+        tools.app_update(2)
+        sdg_train.evaluate_datset()
         tools.SIMU_APP.close()
+            
 
 if __name__ == "__main__":
     main()

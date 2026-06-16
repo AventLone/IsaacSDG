@@ -5,6 +5,11 @@ from datetime import datetime
 from isaacsim.core.utils import stage as stage_utils, prims as prims_utils
 from pxr import UsdGeom, Gf
 
+from tools import audit_coco, LOGGER
+import glob
+
+
+
 
 class BaseSDG:
     # Disable capture on play and async rendering
@@ -16,8 +21,8 @@ class BaseSDG:
     def __init__(self, writer_type=CocoInstanceSegWriter, save_path=None) -> None:
         # Set up writer
         timestamp = datetime.now().strftime("%Y.%m.%d-%H:%M")
-        save_at = f"generated_data/{timestamp}" if save_path is None else f"{save_path}/{timestamp}"
-        data_save_dir = os.path.join(os.getcwd(), save_at)
+        self._save_at = f"generated_data/{timestamp}" if save_path is None else f"{save_path}/{timestamp}"
+        data_save_dir = os.path.join(os.getcwd(), self._save_at)
         self._writer = writer_type(output_dir=data_save_dir)
 
     def create_camera(self, resolution=(504, 504), focus_distance=400.0, 
@@ -75,6 +80,16 @@ class BaseSDG:
         # Apply full transform directly, no Euler decomposition needed
         self._camera_xformable.ClearXformOpOrder()
         self._camera_xformable.AddTransformOp().Set(camera_world_mat)
+
+
+    def evaluate_datset(self):
+        # 1. Search only the immediate folder
+        json_files = glob.glob(f"{self._save_at}/*.json")
+        if len(json_files) != 1:
+            LOGGER.error("JSON files in dataset are more than one!")
+            return
+        audit_coco(json_files[0])
+
 
     # def set_camera_pose_rpy(self, position, rpy_deg):
     #     """

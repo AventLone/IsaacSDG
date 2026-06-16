@@ -640,12 +640,12 @@ def audit_coco(coco_json: str) -> None:
         f"\t\t Clipping:         {dataset_scores['clipping']:>5.1f}/100"
     )
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--coco_json", required=True, help="Path to COCO annotation JSON")
-    args = parser.parse_args()
-    audit_coco(args.coco_json)
+# def main() -> None:
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("--coco_json", required=True, help="Path to COCO annotation JSON")
+    # args = parser.parse_args()
+    # audit_coco(args.coco_json)
 
 
 if __name__ == "__main__":
-    main()
+    audit_coco("/media/avent/DATA/generated_data/train/2026.06.15-13:51/coco_annotations_jjivftpu.json")

@@ -57,7 +57,8 @@ class LightRandomizer:
     def _randomize_light(self) -> rep.scripts.utils.ReplicatorItem:
         lights = rep.get.prims(prim_types=["RectLight", "SphereLight", "DomeLight"])
         with lights:
-            rep.modify.attribute("intensity", rep.distribution.choice([1000, 5000, 10000, 20000, 40000, 50000]))
+            # rep.modify.attribute("intensity", rep.distribution.choice([1000, 5000, 10000, 20000, 40000, 50000]))
+            rep.modify.attribute("intensity", rep.distribution.uniform(2000.0, 50000.0))
             rep.modify.attribute("color", rep.distribution.uniform((0.0, 0.0, 0.0), (1.0, 1.0, 1.0)))
         return lights.node
     

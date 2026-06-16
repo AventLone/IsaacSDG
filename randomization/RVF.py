@@ -4,7 +4,9 @@ Physics-based Randomized Volume Filling
 import random, omni.timeline, omni.kit.app
 from itertools import chain
 from tools.common import set_local_trasform, get_dimensions, bbox_cache
-import isaacsim.core.experimental.utils.semantics as semantics_utils
+import isaacsim.core.utils.semantics as semantics_utils
+# import isaacsim.core.experimental.utils.semantics as semantics_utils
+from semantics.schema.editor import remove_prim_semantics
 
 import carb
 import omni.kit.app, omni.physx
@@ -15,8 +17,7 @@ from typing import Literal
 timeline = omni.timeline.get_timeline_interface()
 app_interface = omni.kit.app.get_app()
 
-
-async def wait_for(frames: int):
+async def wait_for(frames: int): 
     for _ in range(frames):
         await app_interface.next_update_async()
 
