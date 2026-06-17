@@ -85,6 +85,9 @@ class CocoInstanceSegWriter(CocoWriter):
                 if label in self.label_dict:
                     category_id = self.label_dict[label]["id"]
                     self._used_categories.setdefault(label, self.label_dict[label])
+                elif "goods" in label:
+                    category_id = self.label_dict["goods"]["id"]
+                    self._used_categories.setdefault("goods", self.label_dict["goods"])
                 
 
             if category_id is None:

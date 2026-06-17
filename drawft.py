@@ -9,7 +9,7 @@ from randomization.evnet_randomizer import LightRandomizer
 from randomization import LooksRandomizer
 from tools import common
 
-from omni.kit.async_engine import run_coroutine
+# from omni.kit.async_engine import run_coroutine
 from isaacsim.core.utils import stage as stage_utils, prims as prims_utils
 from tools.logger import LOGGER
 
@@ -79,7 +79,7 @@ class SDG(BaseSDG):
         
     def scatter_objects(self, prim_pathes, num_for_each):
         _, camera_path = tools.scatter(prim_pathes, num_for_each, (-5.0, -4.0), (3.6, 5.0))
-        return camera_path[::300]   # Takes every 5th element from the path
+        return camera_path[::25]   # Takes every 5th element from the path
 
     async def randomize_scene(self, i):
         self._random_dome_texture(show_environment_prob=0.6)
@@ -95,11 +95,11 @@ class SDG(BaseSDG):
 
         await common.wait_for(2)
         pile_prim_paths, loaded_pallet_paths = await self.prepare_objects()
-        await common.wait_for(10)
+        await common.wait_for(2)
         self.create_camera()
         await common.wait_for(2)
 
-        for num_for_each in range(3, 5):
+        for num_for_each in range(1, 6):
             scatter_components = []
             if random.random() < 0.3:
                 piles = [random.choice(piles) for _, piles in pile_prim_paths.items()]
@@ -146,7 +146,7 @@ def main() -> None:
     sdg_train = SDG(stage_url="/home/avent/Desktop/IsaacAssets/SDG-Only/warehouse_stage.usd", 
                     dome_texture_urls=dome_textures,
                     boxes_urls_and_weights=boxes_urls_and_weights,
-                    save_path="/media/avent/DATA/generated_data/valid")
+                    save_path="/media/avent/DATA/generated_data/train")
     try:
         tools.SIMU_APP.run_coroutine(sdg_train.generate())
     except KeyboardInterrupt:

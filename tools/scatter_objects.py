@@ -168,11 +168,13 @@ class LoadedPallet:
 
         if not prims_utils.is_prim_path_valid(f"/Assets/Loaded/{pallet_name}"):
             prims_utils.create_prim(f"/Assets/Loaded/{pallet_name}")
-        loaded_pallet_prim_path = f"/Assets/Loaded/{pallet_name}/loaded_{LoadedPallet.index}"
-        # prims_utils.create_prim(loaded_pallet_prim_path, position=(150.0 + LoadedPallet.index * 3.0, 150.0, 0.0))
-        prims_utils.create_prim(loaded_pallet_prim_path)
+        loaded_prim_path = f"/Assets/Loaded/{pallet_name}/loaded_{LoadedPallet.index}"
+        loaded_pallet_prim_path = f"{loaded_prim_path}/pallet"
+        prims_utils.create_prim(loaded_prim_path, position=(150.0 + LoadedPallet.index * 3.0, 150.0, 0.0))
+        # prims_utils.create_prim(loaded_prim_path)
         omni.usd.duplicate_prim(this_stage, prim_path=prim_path, path_to=loaded_pallet_prim_path)
-        common.set_local_trasform(loaded_pallet_prim_path, translation=(150.0 + LoadedPallet.index * 3.0, 150.0, 0.0))
+        common.set_local_trasform(loaded_pallet_prim_path, translation=(0.0, 0.0, 0.0))
+        # common.set_local_trasform(loaded_prim_path, translation=(150.0 + LoadedPallet.index * 3.0, 150.0, 0.0))
        
         pallet_prim = prims_utils.get_prim_at_path(loaded_pallet_prim_path)
         # Apply the physics material to the pallet
@@ -190,8 +192,9 @@ class LoadedPallet:
         # Create the random boxes (without physics) with the specified weights and sort them by size (volume)
         box_urls, box_weights = zip(*LoadedPallet.assets_urls_and_weights)
         rand_boxes_urls = random.choices(box_urls, weights=box_weights, k=num_boxes)
-        boxes_prim = prims_utils.create_prim(f"{loaded_pallet_prim_path}/Boxes")
-        box_prims = [prims_utils.add_reference_to_stage(usd_path=box_url, prim_path=f"{loaded_pallet_prim_path}/Boxes/Box_{i}")
+        boxes_prim = prims_utils.create_prim(f"{loaded_prim_path}/Boxes")
+        common.set_local_trasform(f"{loaded_prim_path}/Boxes", translation=(0.0, 0.0, 0.0))
+        box_prims = [prims_utils.add_reference_to_stage(usd_path=box_url, prim_path=f"{loaded_prim_path}/Boxes/box_{i}")
              for i, box_url in enumerate(rand_boxes_urls)]
 
         box_prims.sort(key=lambda box: common.bbox_cache.ComputeLocalBound(box).GetVolume(), reverse=True)
@@ -243,7 +246,7 @@ class LoadedPallet:
                                                         random.uniform(-overhang, overhang), 0.0])
             
         LoadedPallet.index += 1
-        return loaded_pallet_prim_path
+        return loaded_prim_path
     
     @staticmethod
     def create_collision_walls(prim: Usd.Prim, height=4.6, thickness=0.1, material=None, visible=False) -> list[Usd.Prim]:
