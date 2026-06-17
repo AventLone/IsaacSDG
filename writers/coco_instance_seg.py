@@ -11,13 +11,9 @@ class CocoInstanceSegWriter(CocoWriter):
             "instance_segmentation", init_params={"semanticTypes": self.semantic_types}))
         self.label_dict = {
             'pallet': {'name': 'pallet', 'id': 1, 'supercategory': 'loads', 'color': (220, 20, 60), 'isthing': 1},
-            'plastic_pallet_1': {'name': 'plastic_pallet_1', 'id': 2, 'supercategory': 'loads', 'color': (220, 20, 60), 'isthing': 1},
-            'plastic_pallet_2': {'name': 'plastic_pallet_2', 'id': 3, 'supercategory': 'loads', 'color': (220, 20, 60), 'isthing': 1},
-            'kkp': {'name': 'KKP', 'id': 4, 'supercategory': 'loads', 'color': (220, 20, 60), 'isthing': 1},
-            'goods': {'name': 'goods', 'id': 5, 'supercategory': 'loads', 'color': (119, 11, 32), 'isthing': 1}
+            'kkp': {'name': 'KKP', 'id': 2, 'supercategory': 'loads', 'color': (220, 20, 60), 'isthing': 1},
+            'goods': {'name': 'goods', 'id': 3, 'supercategory': 'loads', 'color': (119, 11, 32), 'isthing': 1}
         }
-
-        # self.coco_annotation_output_path = os.path.join(f"coco_annotations_{self.dataset_id}.json")
         
     def write(self, data: dict):
         """Write function called from the OgnWriter node on every frame to process annotator output.
@@ -89,6 +85,7 @@ class CocoInstanceSegWriter(CocoWriter):
                 if label in self.label_dict:
                     category_id = self.label_dict[label]["id"]
                     self._used_categories.setdefault(label, self.label_dict[label])
+                
 
             if category_id is None:
                 continue

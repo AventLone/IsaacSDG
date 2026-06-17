@@ -72,9 +72,6 @@ def scatter(prim_pathes: list[str], num_for_each, lower_bound, upper_bound, orig
                 dst_prim_path = f"{scatter_prim_path}/no_{i:04d}"
                 target_prim_path = prim_pathes[i % len(prim_pathes)]
                 usd.duplicate_prim(this_stage, prim_path=target_prim_path, path_to=dst_prim_path)
-                # common.set_world_trasform(dst_prim_path, 
-                #                           translation=(world_x, world_y, world_z), 
-                #                           orientation=common.yaw2quat(random.uniform(-30.0, 30.0)))
                 common.set_world_trasform(dst_prim_path, translation=(world_x, world_y, world_z))
                 UsdGeom.Imageable(prims_utils.get_prim_at_path(dst_prim_path)).MakeVisible()
                 
@@ -86,7 +83,7 @@ def scatter(prim_pathes: list[str], num_for_each, lower_bound, upper_bound, orig
 
     cv2.imwrite("images/camera_path.png", path_generation.visualize_path(grid, inflated, path_px, waypoints=waypoints))
 
-    return grid, path_generation.pixel_path_to_world_poses(path_px, 
+    return grid, path_generation.pixel_path_to_world_poses(path_px,
                                                            (origin[0] + lower_bound[0], origin[1] + upper_bound[1]),
                                                            resolution)
 
@@ -164,7 +161,6 @@ class LoadedPallet:
     async def generate(prim_path: str, pallet_name: str, num_boxes: int, overhang=0.1):
         if LoadedPallet.assets_urls_and_weights is None:
             raise ValueError("Please set assets_urls_and_weights before call `generate`!")
-        bbox_cache = bounds_utils.create_bbox_cache()
         this_stage = prims_utils.get_current_stage()
 
         LoadedPallet.physics_material.CreateStaticFrictionAttr().Set(0.001)
@@ -192,17 +188,13 @@ class LoadedPallet:
                                                 material=LoadedPallet.default_material)
 
         # Create the random boxes (without physics) with the specified weights and sort them by size (volume)
-        # box_assets, box_weights = zip(*LoadedPallet.box_prim_paths_and_weights)
-        # rand_boxes = random.choices(box_assets, weights=box_weights, k=num_boxes)
-        # boxes_prim = prims_utils.create_prim(f"{loaded_pallet_prim_path}/Boxes")
-
         box_urls, box_weights = zip(*LoadedPallet.assets_urls_and_weights)
         rand_boxes_urls = random.choices(box_urls, weights=box_weights, k=num_boxes)
         boxes_prim = prims_utils.create_prim(f"{loaded_pallet_prim_path}/Boxes")
         box_prims = [prims_utils.add_reference_to_stage(usd_path=box_url, prim_path=f"{loaded_pallet_prim_path}/Boxes/Box_{i}")
              for i, box_url in enumerate(rand_boxes_urls)]
 
-        box_prims.sort(key=lambda box: bbox_cache.ComputeLocalBound(box).GetVolume(), reverse=True)
+        box_prims.sort(key=lambda box: common.bbox_cache.ComputeLocalBound(box).GetVolume(), reverse=True)
         pallet_dimensions_x, pallet_dimensions_y, _ = common.get_dimensions(pallet_prim)
 
         # Simulate dropping the boxes from random poses on the pallet
@@ -219,7 +211,7 @@ class LoadedPallet:
             # Bind the physics material to the box (allow frictionless sliding)
             mat_binding_api = UsdShade.MaterialBindingAPI.Apply(box_prim)
             mat_binding_api.Bind(LoadedPallet.default_material, UsdShade.Tokens.weakerThanDescendants, "physics")
-            await common.app_update()   # Wait for an app update to load the new attributes
+            await common.app_update_async()   # Wait for an app update to load the new attributes
 
             # Play simulation for a few frames for each box
             common.timeline.play()

@@ -17,7 +17,7 @@ from tools import common
 # common.add_colliders(environment_prim_path)
 
 extensions.enable_extension("isaacsim.asset.gen.omap")
-common.app_update(10)   # 给 Kit 几帧完成 extension startup
+common.app_update_async(10)   # 给 Kit 几帧完成 extension startup
 import omni.physx, omni.usd, omni.timeline, omni.kit.app
 from isaacsim.asset.gen.omap.bindings import _omap as omap_utils
 from isaacsim.asset.gen.omap.utils import compute_coordinates,  update_location
