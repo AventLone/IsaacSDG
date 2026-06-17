@@ -15,7 +15,7 @@ from tools.logger import LOGGER
 
 
 class SDG(BaseSDG):
-    def __init__(self, stage_url: str, dome_texture_urls: list, 
+    def __init__(self, stage_url: str, dome_texture_urls: list,
                  boxes_urls_and_weights: Optional[list]=None,
                  save_path=None) -> None:
         super().__init__(save_path=save_path)
@@ -39,13 +39,21 @@ class SDG(BaseSDG):
         self._light_randomizer = LightRandomizer()
         self._looks_randomizer = LooksRandomizer(random_looks_count=300)
 
+        self._random_count_index = 1
+
         tools.app_update(2)
 
-    def _random_dome_texture(self, show_environment_prob: float = 0.5):
-        show_environment = random.random() <= show_environment_prob
+    def _random_dome_texture(self, show_dome_prob: float = 0.5):
+        show_environment = random.random() >= show_dome_prob
         common.make_visible("/Environment", show_environment)
         if show_environment:
             return
+        
+        # Get some negetive samples
+        if random.random() < 0.3 / show_dome_prob:
+            common.make_visible("/World/Objects", False)
+        else:
+            common.make_visible("/World/Objects", True)
         self._dome_texture.Set(random.choice(self._dome_texture_urls))
 
     async def prepare_objects(self):
@@ -79,15 +87,18 @@ class SDG(BaseSDG):
         
     def scatter_objects(self, prim_pathes, num_for_each):
         _, camera_path = tools.scatter(prim_pathes, num_for_each, (-5.0, -4.0), (3.6, 5.0))
-        return camera_path[::25]   # Takes every 5th element from the path
+        return camera_path[::15]   # Takes every 15th element from the path
 
-    async def randomize_scene(self, i):
-        self._random_dome_texture(show_environment_prob=0.6)
-        if i % 2 == 0:
+    async def randomize_scene(self):
+        self._random_dome_texture(show_dome_prob=0.4)        
+        if self._random_count_index % 2 == 0:
             self._looks_randomizer.randomize()
-        if i % 5 == 0:
+        if self._random_count_index % 5 == 0:
             self._light_randomizer.randomize()
-        await common.app_update_async()
+
+        self._random_count_index += 1
+        
+        await common.wait_for(3)
 
 
     async def generate(self):
@@ -117,9 +128,9 @@ class SDG(BaseSDG):
 
             with tqdm(total=len(camera_path) * len(TARGETS), 
                       desc=f"SDG Progress {num_for_each}", unit=" Frames", file=sys.stdout) as pbar:
-                for i, camera_pose in enumerate(camera_path):
-                    await self.randomize_scene(i)
+                for camera_pose in camera_path:
                     for target in TARGETS:
+                        await self.randomize_scene()
                         self.set_camera_pose_lootat((camera_pose[0], camera_pose[1], random.uniform(0.5, 1.2)),
                                                     lookat_target=target)
                         await rep.orchestrator.step_async(rt_subframes=16)

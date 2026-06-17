@@ -96,7 +96,7 @@ class Pile:
         this_stage = prims_utils.get_current_stage()
         _, _, height = common.get_dimensions(prim_path)
         piles_prim_path = f"{parent_prim_path}/piles_{Pile.index}"
-        prims_utils.create_prim(piles_prim_path, position=(100.0, 100.0, 0.0))
+        prims_utils.create_prim(piles_prim_path, position=(100.0, 100.0, 100.0))
         for i in range(num):
             component_prim_path = f"{piles_prim_path}/componnet_{i}"
             usd.duplicate_prim(stage=this_stage, prim_path=prim_path, path_to=component_prim_path)
@@ -136,6 +136,8 @@ class LoadedPallet:
         if not prims_utils.is_prim_path_valid(assets_loaded_path):
             prims_utils.create_prim(assets_loaded_path, prim_type="Scope")
 
+        common.make_visible(assets_prim_path, False)
+
         # for i, (box_url, weight) in enumerate(assets_urls_and_weights):
         #     prim_path = f"{assets_boxes_path}/box_{i}"
         #     prims_utils.add_reference_to_stage(usd_path=box_url, prim_path=prim_path)
@@ -170,7 +172,7 @@ class LoadedPallet:
             prims_utils.create_prim(f"/Assets/Loaded/{pallet_name}")
         loaded_prim_path = f"/Assets/Loaded/{pallet_name}/loaded_{LoadedPallet.index}"
         loaded_pallet_prim_path = f"{loaded_prim_path}/pallet"
-        prims_utils.create_prim(loaded_prim_path, position=(150.0 + LoadedPallet.index * 3.0, 150.0, 0.0))
+        prims_utils.create_prim(loaded_prim_path, position=(150.0 + LoadedPallet.index * 3.0, 150.0, 100.0))
         # prims_utils.create_prim(loaded_prim_path)
         omni.usd.duplicate_prim(this_stage, prim_path=prim_path, path_to=loaded_pallet_prim_path)
         common.set_local_trasform(loaded_pallet_prim_path, translation=(0.0, 0.0, 0.0))

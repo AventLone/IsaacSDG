@@ -26,7 +26,7 @@ class BaseSDG:
         self._writer = writer_type(output_dir=data_save_dir)
 
     def create_camera(self, resolution=(504, 504), focus_distance=400.0, 
-                       focal_length=15.0, horizontal_aperture=36.0, clipping_range=(0.1, 10000.0)):
+                       focal_length=15.0, horizontal_aperture=36.0, clipping_range=(0.001, 10000.0)):
         stage = stage_utils.get_current_stage()
         camera_path = "/World/Camera"
 
