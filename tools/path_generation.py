@@ -271,7 +271,7 @@ def generate_lawnmower_path(objects_prim_path: str):
     occ_grid, meta = projector.projection_on_xy
 
     free, inflated = inflate_obstacles(occ_grid, resolution=resolution, camera_radius=0.3)
-    waypoints = generate_lawnmower_waypoints(free, spacing_px=60, margin_px=3, min_segment_px=20)
+    waypoints = generate_lawnmower_waypoints(free, spacing_px=30, margin_px=3, min_segment_px=20)
     path_px = connect_waypoints_with_astar(free, waypoints)
 
     cv2.imwrite("images/camera_path.png", visualize_path(occ_grid, inflated, path_px, waypoints=waypoints))

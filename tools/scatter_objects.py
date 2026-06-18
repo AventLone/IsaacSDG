@@ -77,7 +77,7 @@ def scatter(prim_pathes: list[str], num_for_each, lower_bound, upper_bound, orig
                 
                 break
 
-    free, inflated = path_generation.inflate_obstacles(grid, resolution=resolution, camera_radius=0.2)
+    free, inflated = path_generation.inflate_obstacles(grid, resolution=resolution, camera_radius=0.3)
     waypoints = path_generation.generate_lawnmower_waypoints(free, spacing_px=30, margin_px=3, min_segment_px=20)
     path_px = path_generation.connect_waypoints_with_astar(free, waypoints)
 
@@ -102,9 +102,6 @@ class Pile:
             usd.duplicate_prim(stage=this_stage, prim_path=prim_path, path_to=component_prim_path)
             new_component_pos = (random.uniform(-0.03, 0.03), random.uniform(-0.03, 0.03), height * i)
             common.set_local_trasform(component_prim_path, new_component_pos, common.yaw2quat(random.uniform(-10.0, 10.0)))
-            # common.make_visible(component_prim_path, True)
-            # semantics_utils.add_labels(component_prim_path, labels=[category_label])
-        # common.make_visible(piles_prim_path, False)
         Pile.index += 1
         return piles_prim_path
 
@@ -136,7 +133,7 @@ class LoadedPallet:
         if not prims_utils.is_prim_path_valid(assets_loaded_path):
             prims_utils.create_prim(assets_loaded_path, prim_type="Scope")
 
-        common.make_visible(assets_prim_path, False)
+        prims_utils.set_prim_visibility(prims_utils.get_prim_at_path(assets_prim_path), False)
 
         # for i, (box_url, weight) in enumerate(assets_urls_and_weights):
         #     prim_path = f"{assets_boxes_path}/box_{i}"

@@ -11,7 +11,6 @@ from tools import common
 
 # from omni.kit.async_engine import run_coroutine
 from isaacsim.core.utils import stage as stage_utils, prims as prims_utils
-from tools.logger import LOGGER
 
 
 class SDG(BaseSDG):
@@ -23,7 +22,7 @@ class SDG(BaseSDG):
         if not stage_utils.open_stage(stage_url):
             raise RuntimeError(f"Failed to open {stage_url}")
         tools.app_update(2)
-        LOGGER.info("SDG is starting...")
+        tools.LOGGER.info("SDG is starting...")
 
         tools.LoadedPallet.set_assets(boxes_urls_and_weights)
         
@@ -40,20 +39,14 @@ class SDG(BaseSDG):
         self._looks_randomizer = LooksRandomizer(random_looks_count=300)
 
         self._random_count_index = 1
-
+        self._environment_prim = prims_utils.get_prim_at_path("/Environment")
         tools.app_update(2)
 
-    def _random_dome_texture(self, show_dome_prob: float = 0.5):
-        show_environment = random.random() >= show_dome_prob
-        common.make_visible("/Environment", show_environment)
+    def _random_dome_texture(self):
+        show_environment = random.choice([True, False])
+        prims_utils.set_prim_visibility(self._environment_prim, show_environment)
         if show_environment:
             return
-        
-        # Get some negetive samples
-        if random.random() < 0.3 / show_dome_prob:
-            common.make_visible("/World/Objects", False)
-        else:
-            common.make_visible("/World/Objects", True)
         self._dome_texture.Set(random.choice(self._dome_texture_urls))
 
     async def prepare_objects(self):
@@ -87,10 +80,10 @@ class SDG(BaseSDG):
         
     def scatter_objects(self, prim_pathes, num_for_each):
         _, camera_path = tools.scatter(prim_pathes, num_for_each, (-5.0, -4.0), (3.6, 5.0))
-        return camera_path[::15]   # Takes every 15th element from the path
+        return camera_path[::10]   # Takes every 10th element from the path
 
     async def randomize_scene(self):
-        self._random_dome_texture(show_dome_prob=0.4)        
+        self._random_dome_texture()
         if self._random_count_index % 2 == 0:
             self._looks_randomizer.randomize()
         if self._random_count_index % 5 == 0:
@@ -102,7 +95,8 @@ class SDG(BaseSDG):
 
 
     async def generate(self):
-        TARGETS = [(-5.0, 0.0, 0.0), (0.0, 5.0, 0.0), (3.6, 0.0, 0.0), (0.0, -4.0, 0.0), (0.0, 0.0, 0.0)]
+        objects_prim = prims_utils.get_prim_at_path("/World/Objects")
+        noiise_prim = prims_utils.get_prim_at_path("/World/Noise")
 
         await common.wait_for(2)
         pile_prim_paths, loaded_pallet_paths = await self.prepare_objects()
@@ -110,7 +104,27 @@ class SDG(BaseSDG):
         self.create_camera()
         await common.wait_for(2)
 
-        for num_for_each in range(1, 6):
+        # Collect some negtive samples
+        prims_utils.set_prim_visibility(objects_prim, False)
+        prims_utils.set_prim_visibility(noiise_prim, True)
+        await common.wait_for(3)
+        camera_path = tools.path_generation.generate_lawnmower_path("/World/Noise")
+        camera_path = camera_path[::15]
+        with tqdm(total=len(camera_path), desc=f"SDG Progress for Negtive", unit=" Frames", file=sys.stdout) as pbar:
+            for camera_pose in camera_path:
+                self._random_dome_texture()
+                self._light_randomizer.randomize()
+                await common.app_update_async()
+                self.set_camera_pose_lootat((camera_pose[0], camera_pose[1], random.uniform(0.3, 3.6)),
+                                            lookat_target=(0.0, 0.0, 0.0))
+                await rep.orchestrator.step_async(rt_subframes=16)
+                pbar.update(1)
+        prims_utils.set_prim_visibility(objects_prim, True)
+        prims_utils.set_prim_visibility(noiise_prim, False)
+        await common.wait_for(3)
+
+        TARGETS = [(-5.0, 0.0, 0.0), (0.0, 5.0, 0.0), (3.6, 0.0, 0.0), (0.0, -4.0, 0.0), (0.0, 0.0, 0.0)]
+        for num_for_each in range(1, 5):
             scatter_components = []
             if random.random() < 0.3:
                 piles = [random.choice(piles) for _, piles in pile_prim_paths.items()]
@@ -161,9 +175,9 @@ def main() -> None:
     try:
         tools.SIMU_APP.run_coroutine(sdg_train.generate())
     except KeyboardInterrupt:
-        LOGGER.warning("Simulation interrupted by user (Ctrl+C). Cleaning up...")
+        tools.LOGGER.warning("Simulation interrupted by user (Ctrl+C). Cleaning up...")
     except Exception as e:
-        LOGGER.error(f"Something went wrong: {e}")
+        tools.LOGGER.error(f"Something went wrong: {e}")
     finally:
         tools.app_update(2)
         sdg_train.evaluate_datset()
