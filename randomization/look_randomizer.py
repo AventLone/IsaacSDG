@@ -1,9 +1,9 @@
 from pxr import Usd, UsdGeom, UsdShade, Sdf, Gf
 from isaacsim.core.utils import prims as prims_utils
 import random
+from collections import defaultdict
 from PIL import Image, ImageFilter, ImageEnhance
 import numpy as np
-import random
 from pathlib import Path
 import sys
 from tqdm import trange
@@ -36,7 +36,7 @@ def random_mixed_color_texture(path: str, size: int = 512, grid_size: int = 16,
 
 
 class LooksRandomizer:
-    def __init__(self, random_looks_count=100):
+    def __init__(self, random_looks_count=100, group_by_xform=True):
         temp_texture_img_dir = "images/temp"
         Path(temp_texture_img_dir).mkdir(parents=True, exist_ok=True)
         this_stage = prims_utils.get_current_stage()
@@ -46,6 +46,9 @@ class LooksRandomizer:
             prims_utils.create_prim(material_prim_path)
 
         self._materials = []
+        self._sub_prims = []
+        self._sub_prims_by_xform = defaultdict(list)
+        self._group_by_xform = group_by_xform
         # for i in range(random_looks_count):
         for i in trange(random_looks_count, desc="Creating random materials", unit="mat", file=sys.stdout):
             material_path = f"{material_prim_path}/material_{i}"
@@ -78,11 +81,38 @@ class LooksRandomizer:
             raise RuntimeError(f"Invalid prim path: {prim_path}")
         
         self._sub_prims = []
+        self._sub_prims_by_xform = defaultdict(list)
 
         for sub_prim in Usd.PrimRange(prim):
             if sub_prim.IsA(UsdGeom.Mesh) or sub_prim.IsA(UsdGeom.Gprim):
                 self._sub_prims.append(sub_prim)
 
+                # Group each renderable prim by its nearest parent Xform so
+                # sibling meshes share one material assignment.
+                parent = sub_prim.GetParent()
+                xform_path = None
+                while parent and parent.IsValid():
+                    if parent.IsA(UsdGeom.Xform):
+                        xform_path = str(parent.GetPath())
+                        break
+                    parent = parent.GetParent()
+
+                # If there is no Xform ancestor, fall back to grouping by itself.
+                group_key = xform_path or str(sub_prim.GetPath())
+                self._sub_prims_by_xform[group_key].append(sub_prim)
+
     def randomize(self):
-        for subprim in self._sub_prims:
-            UsdShade.MaterialBindingAPI.Apply(subprim).Bind(random.choice(self._materials))
+        if self._group_by_xform:
+            # One random material per Xform group.
+            for _, grouped_subprims in self._sub_prims_by_xform.items():
+                material = random.choice(self._materials)
+                for subprim in grouped_subprims:
+                    UsdShade.MaterialBindingAPI.Apply(subprim).Bind(material)
+        else:
+            # Independent random material per renderable prim.
+            for subprim in self._sub_prims:
+                material = random.choice(self._materials)
+                UsdShade.MaterialBindingAPI.Apply(subprim).Bind(material)
+
+    def set_grouping_mode(self, group_by_xform: bool):
+        self._group_by_xform = group_by_xform

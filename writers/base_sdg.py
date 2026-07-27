@@ -1,4 +1,6 @@
 import os, carb.settings
+import shutil
+from pathlib import Path
 import omni.replicator.core as rep
 from writers import CocoInstanceSegWriter
 from datetime import datetime
@@ -89,6 +91,66 @@ class BaseSDG:
             LOGGER.error("JSON files in dataset are more than one!")
             return
         audit_coco(json_files[0])
+
+    def organize_basicwriter_outputs(self, semantic_folder_name: str = "mask"):
+        """Move BasicWriter flat PNG outputs into dedicated subfolders.
+
+        - rgb_XXXX.png -> rgb/0001.png, 0002.png, ...
+        - semantic_segmentation_XXXX.png -> semantic_folder_name/0001.png, 0002.png, ...
+        - *.json -> json/0001.json, 0002.json, ...
+        """
+        output_dir = Path(os.getcwd()) / self._save_at
+        if not output_dir.exists():
+            LOGGER.warning(f"Output directory does not exist: {output_dir}")
+            return
+
+        rgb_dir = output_dir / "rgb"
+        semantic_dir = output_dir / semantic_folder_name
+        json_dir = output_dir / "json"
+        rgb_dir.mkdir(exist_ok=True)
+        semantic_dir.mkdir(exist_ok=True)
+        json_dir.mkdir(exist_ok=True)
+
+        def sort_key(file_path: Path):
+            stem = file_path.stem
+            suffix_num = stem.rsplit("_", 1)[-1]
+            return int(suffix_num) if suffix_num.isdigit() else stem
+
+        rgb_files = sorted(
+            [p for p in output_dir.glob("rgb_*.png") if p.is_file()],
+            key=sort_key,
+        )
+        semantic_files = sorted(
+            [p for p in output_dir.glob("semantic_segmentation_*.png") if p.is_file()],
+            key=sort_key,
+        )
+        json_files = sorted(
+            [p for p in output_dir.glob("*.json") if p.is_file()],
+            key=lambda p: p.name,
+        )
+
+        moved_rgb = 0
+        for i, file_path in enumerate(rgb_files, start=1):
+            dst = rgb_dir / f"{i:04d}.png"
+            shutil.move(str(file_path), str(dst))
+            moved_rgb += 1
+
+        moved_semantic = 0
+        for i, file_path in enumerate(semantic_files, start=1):
+            dst = semantic_dir / f"{i:04d}.png"
+            shutil.move(str(file_path), str(dst))
+            moved_semantic += 1
+
+        moved_json = 0
+        for i, file_path in enumerate(json_files, start=1):
+            dst = json_dir / f"{i:04d}.json"
+            shutil.move(str(file_path), str(dst))
+            moved_json += 1
+
+        LOGGER.info(
+            f"Reorganized BasicWriter outputs: moved and renamed {moved_rgb} RGB files in '{rgb_dir.name}' "
+            f"{moved_semantic} semantic files in '{semantic_dir.name}', and {moved_json} JSON files in '{json_dir.name}'."
+        )
 
 
     # def set_camera_pose_rpy(self, position, rpy_deg):

@@ -8,7 +8,7 @@ from tools import path_generation
 import cv2
 # import isaacsim.core.experimental.utils.semantics as semantics_utils
 import isaacsim.core.utils.semantics as semantics_utils
-from isaacsim.core.utils import bounds as bounds_utils
+# from isaacsim.core.utils import bounds as bounds_utils
 
 from pxr import Gf, Usd, UsdGeom, UsdPhysics, UsdShade, PhysicsSchemaTools, PhysxSchema
 import omni.usd, omni.physx, carb
@@ -235,8 +235,6 @@ class LoadedPallet:
         for wall in collision_walls:
             this_stage.RemovePrim(wall.GetPath())
 
-        # semantics_utils.remove_all_labels(boxes_prim, include_descendants=True)
-        # semantics_utils.remove_labels(boxes_prim, instance_name="class", include_descendants=True)
         semantics_utils.remove_all_semantics(boxes_prim, recursive=True)
         semantics_utils.add_labels(boxes_prim, labels=["goods"])
         overhang = abs(overhang)
