@@ -79,7 +79,7 @@ class LooksRandomizer:
 
         if not prim or not prim.IsValid():
             raise RuntimeError(f"Invalid prim path: {prim_path}")
-        
+
         self._sub_prims = []
         self._sub_prims_by_xform = defaultdict(list)
 
@@ -100,6 +100,58 @@ class LooksRandomizer:
                 # If there is no Xform ancestor, fall back to grouping by itself.
                 group_key = xform_path or str(sub_prim.GetPath())
                 self._sub_prims_by_xform[group_key].append(sub_prim)
+
+    def set_prims(self, prims: list[Usd.Prim]):
+        self._sub_prims = []
+        self._sub_prims_by_xform = defaultdict(list)
+
+        for prim in prims:
+            if not prim or not prim.IsValid():
+                raise RuntimeError(f"Invalid prim: {prim}")
+
+            for sub_prim in Usd.PrimRange(prim):
+                if sub_prim.IsA(UsdGeom.Mesh) or sub_prim.IsA(UsdGeom.Gprim):
+                    self._sub_prims.append(sub_prim)
+
+                    # Group each renderable prim by its nearest parent Xform so
+                    # sibling meshes share one material assignment.
+                    parent = sub_prim.GetParent()
+                    xform_path = None
+                    while parent and parent.IsValid():
+                        if parent.IsA(UsdGeom.Xform):
+                            xform_path = str(parent.GetPath())
+                            break
+                        parent = parent.GetParent()
+
+                    # If there is no Xform ancestor, fall back to grouping by itself.
+                    group_key = xform_path or str(sub_prim.GetPath())
+                    self._sub_prims_by_xform[group_key].append(sub_prim)
+
+    def add_prim(self, prim_path: str):
+        prim = prims_utils.get_prim_at_path(prim_path)
+
+        if not prim or not prim.IsValid():
+            raise RuntimeError(f"Invalid prim path: {prim_path}")
+
+        for sub_prim in Usd.PrimRange(prim):
+            if sub_prim.IsA(UsdGeom.Mesh) or sub_prim.IsA(UsdGeom.Gprim):
+                if sub_prim not in self._sub_prims:
+                    self._sub_prims.append(sub_prim)
+
+                # Group each renderable prim by its nearest parent Xform so
+                # sibling meshes share one material assignment.
+                parent = sub_prim.GetParent()
+                xform_path = None
+                while parent and parent.IsValid():
+                    if parent.IsA(UsdGeom.Xform):
+                        xform_path = str(parent.GetPath())
+                        break
+                    parent = parent.GetParent()
+
+                # If there is no Xform ancestor, fall back to grouping by itself.
+                group_key = xform_path or str(sub_prim.GetPath())
+                if sub_prim not in self._sub_prims_by_xform[group_key]:
+                    self._sub_prims_by_xform[group_key].append(sub_prim)
 
     def randomize(self):
         if self._group_by_xform:

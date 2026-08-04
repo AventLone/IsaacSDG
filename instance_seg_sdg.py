@@ -31,8 +31,8 @@ class SDG(BaseSDG):
         self._dome_prim_path = "/World/Lights/DomeLight"
         self._dome_texture_urls = dome_texture_urls
         self._dome_prim = prims_utils.create_prim(prim_path=self._dome_prim_path, prim_type="DomeLight",
-                                            attributes={"inputs:intensity": 1000.0,
-                                                        "inputs:texture:file": dome_texture_urls[0]})
+                                                  attributes={"inputs:intensity": 1000.0,
+                                                              "inputs:texture:file": dome_texture_urls[0]})
         self._dome_texture = self._dome_prim.GetAttribute("inputs:texture:file")
 
         self._light_randomizer = LightRandomizer()
@@ -105,36 +105,37 @@ class SDG(BaseSDG):
         await common.wait_for(2)
 
         # Collect some negtive samples
-        prims_utils.set_prim_visibility(objects_prim, False)
-        prims_utils.set_prim_visibility(noise_prim, True)
-        await common.wait_for(3)
-        camera_path = tools.path_generation.generate_lawnmower_path("/World/Noise")
-        camera_path = camera_path[::15]
-        with tqdm(total=len(camera_path), desc=f"SDG Progress for Negtive", unit=" Frames", file=sys.stdout) as pbar:
-            for camera_pose in camera_path:
-                self._random_dome_texture()
-                self._light_randomizer.randomize()
-                await common.app_update_async()
-                self.set_camera_pose_lootat((camera_pose[0], camera_pose[1], random.uniform(0.3, 3.6)),
-                                            lookat_target=(0.0, 0.0, 0.0))
-                await rep.orchestrator.step_async(rt_subframes=16)
-                pbar.update(1)
+        # prims_utils.set_prim_visibility(objects_prim, False)
+        # prims_utils.set_prim_visibility(noise_prim, True)
+        # await common.wait_for(3)
+        # camera_path = tools.path_generation.generate_lawnmower_path("/World/Noise")
+        # camera_path = camera_path[::15]
+        # with tqdm(total=len(camera_path), desc=f"SDG Progress for Negtive", unit=" Frames", file=sys.stdout) as pbar:
+        #     for camera_pose in camera_path:
+        #         self._random_dome_texture()
+        #         self._light_randomizer.randomize()
+        #         await common.app_update_async()
+        #         self.set_camera_pose_lootat((camera_pose[0], camera_pose[1], random.uniform(0.3, 3.6)),
+        #                                     lookat_target=(0.0, 0.0, 0.0))
+        #         await rep.orchestrator.step_async(rt_subframes=16)
+        #         pbar.update(1)
         prims_utils.set_prim_visibility(objects_prim, True)
         prims_utils.set_prim_visibility(noise_prim, False)
         await common.wait_for(3)
 
         TARGETS = [(-5.0, 0.0, 0.0), (0.0, 5.0, 0.0), (3.6, 0.0, 0.0), (0.0, -4.0, 0.0), (0.0, 0.0, 0.0)]
-        for num_for_each in range(1, 3):
+        # for num_for_each in range(1, 7):
+        for num_for_each in [1, 2, 7]:
             scatter_components = []
             if random.random() < 0.3:
                 piles = [random.choice(piles) for _, piles in pile_prim_paths.items()]
                 piles.append("/World/Objects/Prepared/KKP")
-                piles.append("/World/Objects/Prepared/KKP")
-                piles.append("/World/Objects/Prepared/KKP")
+                # piles.append("/World/Objects/Prepared/KKP")
+                # piles.append("/World/Objects/Prepared/KKP")
                 scatter_components.extend(piles)
             loaded = [random.choice(loaded) for _, loaded in loaded_pallet_paths.items()]
-            for _ in range(2):
-                loaded.append(random.choice(loaded_pallet_paths["KKP"]))
+            # for _ in range(2):
+            #     loaded.append(random.choice(loaded_pallet_paths["KKP"]))
             scatter_components.extend(loaded)
             scatter_prim_path = "/World/Objects/Scatter"
             camera_path = self.scatter_objects(scatter_components, num_for_each)
@@ -171,7 +172,7 @@ def main() -> None:
     sdg_train = SDG(stage_url="/media/avent/DATA/IsaacAssets/SDG-Only/warehouse_stage.usd", 
                     dome_texture_urls=dome_textures,
                     boxes_urls_and_weights=boxes_urls_and_weights,
-                    save_path="/media/avent/DATA/generated_data/train")
+                    save_path="/media/avent/DATA/generated_data/valid")
     try:
         tools.SIMU_APP.run_coroutine(sdg_train.generate())
     except KeyboardInterrupt:

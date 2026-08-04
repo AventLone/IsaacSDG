@@ -11,8 +11,6 @@ from tools import audit_coco, LOGGER
 import glob
 
 
-
-
 class BaseSDG:
     # Disable capture on play and async rendering
     carb.settings.get_settings().set("/omni/replicator/captureOnPlay", False)
@@ -27,7 +25,7 @@ class BaseSDG:
         data_save_dir = os.path.join(os.getcwd(), self._save_at)
         self._writer = writer_type(output_dir=data_save_dir)
 
-    def create_camera(self, resolution=(504, 504), focus_distance=400.0, 
+    def create_camera(self, resolution=(960, 600), focus_distance=400.0, 
                        focal_length=15.0, horizontal_aperture=36.0, clipping_range=(0.001, 10000.0)):
         stage = stage_utils.get_current_stage()
         camera_path = "/World/Camera"
@@ -51,6 +49,29 @@ class BaseSDG:
         self._writer.detach()
         if self._render_product is not None:
             self._render_product.destroy()
+
+
+    def set_camera_pose(self, position: tuple[float, float, float], rpy_deg: tuple[float, float, float]):
+        """Set camera pose using extrinsic Euler angles in degrees.
+
+        rpy_deg is interpreted as roll, pitch, yaw about fixed X, Y, Z axes.
+        """
+        if self._camera_xformable is None:
+            raise RuntimeError("Camera has not been created yet.")
+
+        x, y, z = position
+        roll, pitch, yaw = (float(rpy_deg[0]), float(rpy_deg[1]), float(rpy_deg[2]))
+
+        # Extrinsic X-Y-Z rotations are equivalent to Rz * Ry * Rx in matrix form.
+        rx = Gf.Matrix4d(Gf.Rotation(Gf.Vec3d(1.0, 0.0, 0.0), roll))
+        ry = Gf.Matrix4d(Gf.Rotation(Gf.Vec3d(0.0, 1.0, 0.0), pitch))
+        rz = Gf.Matrix4d(Gf.Rotation(Gf.Vec3d(0.0, 0.0, 1.0), yaw))
+
+        world: Gf.Matrix4d = rz * ry * rx
+        world.SetTranslate(Gf.Vec3d(float(x), float(y), float(z)))
+
+        self._camera_xformable.ClearXformOpOrder()
+        self._camera_xformable.AddTransformOp().Set(world)
 
 
     def set_camera_pose_lootat(self, position, lookat_target=(0.0, 0.0, 0.0)):
@@ -92,6 +113,7 @@ class BaseSDG:
             return
         audit_coco(json_files[0])
 
+
     def organize_basicwriter_outputs(self, semantic_folder_name: str = "mask"):
         """Move BasicWriter flat PNG outputs into dedicated subfolders.
 
@@ -116,18 +138,12 @@ class BaseSDG:
             suffix_num = stem.rsplit("_", 1)[-1]
             return int(suffix_num) if suffix_num.isdigit() else stem
 
-        rgb_files = sorted(
-            [p for p in output_dir.glob("rgb_*.png") if p.is_file()],
-            key=sort_key,
-        )
+        rgb_files = sorted([p for p in output_dir.glob("rgb_*.png") if p.is_file()], key=sort_key)
         semantic_files = sorted(
             [p for p in output_dir.glob("semantic_segmentation_*.png") if p.is_file()],
-            key=sort_key,
+            key=sort_key
         )
-        json_files = sorted(
-            [p for p in output_dir.glob("*.json") if p.is_file()],
-            key=lambda p: p.name,
-        )
+        json_files = sorted([p for p in output_dir.glob("*.json") if p.is_file()], key=lambda p: p.name)
 
         moved_rgb = 0
         for i, file_path in enumerate(rgb_files, start=1):
@@ -148,19 +164,6 @@ class BaseSDG:
             moved_json += 1
 
         LOGGER.info(
-            f"Reorganized BasicWriter outputs: moved and renamed {moved_rgb} RGB files in '{rgb_dir.name}' "
+            f"Reorganized BasicWriter outputs: moved and renamed {moved_rgb} RGB files in '{rgb_dir.name}'"
             f"{moved_semantic} semantic files in '{semantic_dir.name}', and {moved_json} JSON files in '{json_dir.name}'."
         )
-
-
-    # def set_camera_pose_rpy(self, position, rpy_deg):
-    #     """
-    #     position: (x, y, z)
-    #     rpy_deg:  (roll, pitch, yaw) in degrees
-    #     """
-    #     x, y, z = position
-    #     roll, pitch, yaw = rpy_deg
-
-    #     self._camera_xform_api.SetTranslate((float(x), float(y), float(z)))
-    #     # RotationOrderXYZ means: X = roll, Y = pitch, Z = yaw
-    #     self._camera_xform_api.SetRotate((float(roll), float(pitch), float(yaw)), UsdGeom.XformCommonAPI.RotationOrderXYZ)

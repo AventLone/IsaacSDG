@@ -294,17 +294,13 @@ async def main_async() -> None:
         await omni.kit.app.get_app().next_update_async()
 
     # Attach one behavior instance per surface, with independent seed per pallet.
-    await asyncio.gather(
-        *(
-            attach_volume_stack_randomizer_async(
-                surface,
-                box_assets_csv=box_csv,
-                num_range=(args.min_boxes, args.max_boxes),
-                drop_height=args.drop_height,
-                seed=int(rng.integers(0, 2**31)),
-            )
-            for surface in surfaces
-        )
+    await asyncio.gather(*(attach_volume_stack_randomizer_async(
+        surface,
+        box_assets_csv=box_csv,
+        num_range=(args.min_boxes, args.max_boxes),
+        drop_height=args.drop_height,
+        seed=int(rng.integers(0, 2**31)))
+        for surface in surfaces)
     )
 
     await run_all_pallet_stacks_async(surfaces)

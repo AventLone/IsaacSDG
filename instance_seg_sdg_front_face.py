@@ -36,7 +36,7 @@ class SDG(BaseSDG):
         self._dome_texture = self._dome_prim.GetAttribute("inputs:texture:file")
 
         self._light_randomizer = LightRandomizer()
-        self._looks_randomizer = LooksRandomizer(random_looks_count=300)
+        self._looks_randomizer = LooksRandomizer(random_looks_count=300) 
 
         self._random_count_index = 1
         self._environment_prim = prims_utils.get_prim_at_path("/Environment")
@@ -82,7 +82,7 @@ class SDG(BaseSDG):
         return camera_path[::300]   # Takes every 10th element from the path
 
     async def randomize_scene(self):
-        self._random_dome_texture()
+        # self._random_dome_texture()
         if self._random_count_index % 2 == 0:
             self._looks_randomizer.randomize()
         if self._random_count_index % 5 == 0:
@@ -123,19 +123,11 @@ class SDG(BaseSDG):
         # await common.wait_for(3)
 
         TARGETS = [(-5.0, 0.0, 0.0), (0.0, 5.0, 0.0), (3.6, 0.0, 0.0), (0.0, -4.0, 0.0), (0.0, 0.0, 0.0)]
-        for num_for_each in range(3, 8):
-            scatter_components = ["/World/Objects/Prepared/eu", "/World/Objects/Prepared/KKP", "/World/Objects/Prepared/aluminum",
-                                  "/World/Objects/Prepared/plastic_a", "/World/Objects/Prepared/plastic_b", "/World/Objects/Prepared/rackble"]
-            # if random.random() < 0.3:
-            #     piles = [random.choice(piles) for _, piles in pile_prim_paths.items()]
-            #     piles.append("/World/Objects/Prepared/KKP")
-            #     piles.append("/World/Objects/Prepared/KKP")
-            #     piles.append("/World/Objects/Prepared/KKP")
-            #     scatter_components.extend(piles)
-            # loaded = [random.choice(loaded) for _, loaded in loaded_pallet_paths.items()]
-            # for _ in range(2):
-            #     loaded.append(random.choice(loaded_pallet_paths["KKP"]))
-            # scatter_components.extend(loaded)
+        for num_for_each in range(8, 13):
+            # scatter_components = ["/World/Objects/Prepared/eu", "/World/Objects/Prepared/KKP", "/World/Objects/Prepared/aluminum",
+            #                       "/World/Objects/Prepared/plastic_a", "/World/Objects/Prepared/plastic_b", "/World/Objects/Prepared/rackble"]
+            scatter_components = ["/World/Objects/Prepared/plastic_a"]
+
             scatter_prim_path = "/World/Objects/Scatter"
             camera_path = self.scatter_objects(scatter_components, num_for_each)
             self._looks_randomizer.set_prim(scatter_prim_path)

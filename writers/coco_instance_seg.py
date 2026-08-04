@@ -11,8 +11,8 @@ class CocoInstanceSegWriter(CocoWriter):
             "instance_segmentation", init_params={"semanticTypes": self.semantic_types}))
         self.label_dict = {
             'pallet': {'name': 'pallet', 'id': 1, 'supercategory': 'loads', 'color': (220, 20, 60), 'isthing': 1},
-            'kkp': {'name': 'KKP', 'id': 2, 'supercategory': 'loads', 'color': (220, 20, 60), 'isthing': 1},
-            'goods': {'name': 'goods', 'id': 3, 'supercategory': 'loads', 'color': (119, 11, 32), 'isthing': 1}
+            # 'kkp': {'name': 'KKP', 'id': 2, 'supercategory': 'loads', 'color': (220, 20, 60), 'isthing': 1},
+            # 'goods': {'name': 'goods', 'id': 3, 'supercategory': 'loads', 'color': (119, 11, 32), 'isthing': 1}
         }
         
     def write(self, data: dict):
@@ -85,9 +85,9 @@ class CocoInstanceSegWriter(CocoWriter):
                 if label in self.label_dict:
                     category_id = self.label_dict[label]["id"]
                     self._used_categories.setdefault(label, self.label_dict[label])
-                elif "goods" in label:
-                    category_id = self.label_dict["goods"]["id"]
-                    self._used_categories.setdefault("goods", self.label_dict["goods"])
+                # elif "goods" in label:
+                #     category_id = self.label_dict["goods"]["id"]
+                #     self._used_categories.setdefault("goods", self.label_dict["goods"])
                 
 
             if category_id is None:

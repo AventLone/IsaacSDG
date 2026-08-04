@@ -4,6 +4,8 @@ from isaacsim.core.utils import bounds as bounds_utils, prims as prims_utils, st
 # from pxr import Usd, Gf, UsdGeom, UsdPhysics
 from pxr import Gf, Usd, UsdGeom, UsdPhysics, UsdShade, PhysicsSchemaTools, PhysxSchema
 import pathlib, glob, os, omni.timeline, omni.kit.app
+import omni.physx, random, carb
+import numpy as np
 
 timeline = omni.timeline.get_timeline_interface()
 app_interface = omni.kit.app.get_app()
@@ -147,3 +149,69 @@ def add_rigid_body_dynamics(prim: Usd.Prim, disable_gravity=False, angular_dampi
     physx_rigid_body_api.GetDisableGravityAttr().Set(disable_gravity)
     if angular_damping is not None:
         physx_rigid_body_api.CreateAngularDampingAttr().Set(angular_damping)
+
+def find_prims(stage: Usd.Stage, name_start_with: str):
+    matches = [prim for prim in Usd.PrimRange(stage.GetPseudoRoot())
+               if prim.IsValid() and prim.GetName().startswith(name_start_with)]
+    return matches
+
+
+async def get_traverse_path(lower_boundary: tuple[float, float, float], upper_boundary: tuple[float, float, float],
+                      dx: float, dy: float, sweep_axis_x=True) -> list[tuple[float, float, float]]:
+    """
+    Generate collision-free traverse waypoints within a 3D boundary volume.
+
+    The function raster-scans the XY area using the provided step sizes (`dx`, `dy`) and,
+    for each XY sample, randomly picks a Z value between `lower_boundary[2]` and
+    `upper_boundary[2]`. A waypoint is accepted only if no overlap is detected by
+    PhysX `overlap_sphere` query.
+
+    Args:
+        lower_boundary: Minimum corner of the sampling volume as (x, y, z).
+        upper_boundary: Maximum corner of the sampling volume as (x, y, z).
+        dx: Step size along X direction. Must be > 0.
+        dy: Step size along Y direction. Must be > 0.
+        sweep_axis_x: If True, outer loop sweeps Y then X; otherwise X then Y.
+
+    Returns:
+        A list of valid waypoints as (x, y, z) tuples.
+
+    Raises:
+        ValueError: If `dx` or `dy` is not positive.
+        RuntimeError: If PhysX scene query interface is unavailable.
+    """
+    
+    if dx <= 0 or dy <= 0:
+        raise ValueError("dx and dy must be > 0")
+
+    timeline.play()
+    await wait_for(2)
+
+    scene_query = omni.physx.get_physx_scene_query_interface()
+    if scene_query is None:
+        raise RuntimeError("PhysX scene query interface is unavailable.")
+
+    path = []
+    z_min, z_max = lower_boundary[2], upper_boundary[2]
+
+    if sweep_axis_x:
+        ys = np.arange(lower_boundary[1], upper_boundary[1], dy)
+        for y in ys:
+            xs = np.arange(lower_boundary[0], upper_boundary[0], dx)
+            for x in xs:
+                waypoint = (float(x), float(y), random.uniform(z_min, z_max))
+                if scene_query.overlap_sphere(0.1, carb.Float3(*waypoint), None, True) == 0:
+                    path.append(waypoint)
+    else:
+        xs = np.arange(lower_boundary[0], upper_boundary[0], dx)
+        for x in xs:
+            ys = np.arange(lower_boundary[1], upper_boundary[1], dy)
+            for y in ys:
+                waypoint = (float(x), float(y), random.uniform(z_min, z_max))
+                if scene_query.overlap_sphere(0.1, carb.Float3(*waypoint), None, True) == 0:
+                    path.append(waypoint)
+    timeline.pause()
+
+    return path
+
+
